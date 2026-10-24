@@ -1,5 +1,7 @@
 # Chat Template
 
+Android 第一阶段适配、环境要求、启动步骤与验证记录见 [docs/android-baseline.md](docs/android-baseline.md)。请使用自定义 development build；本项目不能在 Expo Go 中运行。
+
 https://github.com/user-attachments/assets/864ca10c-be94-4c45-8e98-a71bff7a0042
 
 A high-performance AI chatbot template built with [Expo](https://expo.dev) and [Expo Router](https://docs.expo.dev/router/introduction/). Ships with iOS 26 Liquid Glass support, a responsive web UI, and runs on iOS, Android, and web from a single codebase.
@@ -19,7 +21,7 @@ A high-performance AI chatbot template built with [Expo](https://expo.dev) and [
 
 | Layer      | Technology                                                                                                              |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Framework  | Expo SDK 55, React Native 0.83, React 19                                                                                |
+| Framework  | Expo SDK 57, React Native 0.86.3, React 19.2.3                                                                         |
 | Navigation | Expo Router (file-based) with typed routes, [Legend List](https://legendapp.com/open-source/list/) for virtualized chat |
 | Styling    | Tailwind CSS v4 via [Uniwind](https://uniwind.dev/) + `tailwind-merge`                                                  |
 | Native UI  | `@expo/ui` (SwiftUI), `expo-symbols`, `expo-haptics`, `expo-glass-effect`                                               |
