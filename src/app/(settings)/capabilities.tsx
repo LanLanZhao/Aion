@@ -1,4 +1,5 @@
 import { Icon } from "@/components/icon";
+import { useDrawer } from "@/components/drawer-content";
 import {
   SettingsSection,
   SettingsToggleRow,
@@ -12,7 +13,7 @@ import {
   Globe,
   Search,
 } from "lucide-react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -33,6 +34,10 @@ export default function CapabilitiesScreen() {
   const [searchChats, setSearchChats] = useState(true);
   const [generateMemory, setGenerateMemory] = useState(true);
   const [toolAccess, setToolAccess] = useState("Auto");
+  const { requestDrawerRestore } = useDrawer();
+
+  // Reopen the drawer when this screen is popped back to the chat.
+  useEffect(() => () => requestDrawerRestore(), [requestDrawerRestore]);
 
   return (
     <ScrollView

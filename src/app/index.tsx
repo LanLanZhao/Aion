@@ -220,8 +220,11 @@ export default function ChatScreen() {
   // Returning from a drawer destination should land back on the drawer.
   useFocusEffect(
     useCallback(() => {
-      if (!takeDrawerRestore()) return;
-      const frame = requestAnimationFrame(openDrawer);
+      // Defer past the commit so the popped screen's cleanup has run and has
+      // had a chance to record the restore request.
+      const frame = requestAnimationFrame(() => {
+        if (takeDrawerRestore()) openDrawer();
+      });
       return () => cancelAnimationFrame(frame);
     }, [openDrawer, takeDrawerRestore]),
   );

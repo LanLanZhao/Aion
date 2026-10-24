@@ -4,7 +4,7 @@ import { MOCK_CHATS, type MockChat } from "@/utils/mock-chats";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Color, Link, Stack, useRouter } from "expo-router";
 import { Menu, Search } from "lucide-react-native";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, FlatList, Pressable, Text, View } from "react-native";
 
 type Filter = "all" | "starred";
@@ -78,6 +78,12 @@ export default function ChatsScreen() {
   const [search, setSearch] = useState("");
   const [chats, setChats] = useState(MOCK_CHATS);
   const [filter, setFilter] = useState<Filter>("all");
+  const { requestDrawerRestore } = useDrawer();
+
+  // Popping this screen returns to the chat, so reopen the drawer it was
+  // opened from. Navigating deeper keeps this screen mounted, so a chat tap
+  // does not trigger it.
+  useEffect(() => () => requestDrawerRestore(), [requestDrawerRestore]);
 
   const filtered = useMemo(() => {
     let results = chats;

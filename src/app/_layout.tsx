@@ -81,7 +81,7 @@ export default function RootLayout() {
 
 function RootDrawer() {
   const router = useRouter();
-  const { isOpen, openDrawer, closeDrawer, requestDrawerRestore } = useDrawer();
+  const { isOpen, openDrawer, closeDrawer } = useDrawer();
 
   useSystemBackgroundColor();
 
@@ -97,8 +97,7 @@ function RootDrawer() {
             // Push, not replace: replacing the chat screen leaves nothing to
             // pop, so Android Back would exit the app instead of going back.
             router.navigate("/chats");
-          }}
-          onNewChat={() => {
+          }}          onNewChat={() => {
             closeDrawer();
             router.replace("/", { withAnchor: true });
           }}
@@ -107,13 +106,10 @@ function RootDrawer() {
             // do not dismiss it. Close it first or Settings stays hidden
             // underneath the still-open panel.
             closeDrawer();
-            // Coming back should land on the drawer this was opened from.
-            requestDrawerRestore();
             router.navigate("/(settings)/settings");
           }}
           onOpenCapabilities={() => {
             closeDrawer();
-            requestDrawerRestore();
             router.navigate("/(settings)/capabilities");
           }}
           onClose={closeDrawer}

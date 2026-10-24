@@ -1,4 +1,5 @@
 import { Icon } from "@/components/icon";
+import { useDrawer } from "@/components/drawer-content";
 import {
   AvatarMonogram,
   SettingsCard,
@@ -9,8 +10,7 @@ import {
 import { cn } from "@/utils/tailwind";
 import * as Application from "expo-application";
 import type { Href } from "expo-router";
-import { useRouter } from "expo-router";
-import {
+import { useRouter } from "expo-router";import {
   ArrowLeft,
   Bell,
   CircleUser,
@@ -29,7 +29,7 @@ import {
   Wallet,
 } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -119,6 +119,12 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const [hapticFeedback, setHapticFeedback] = useState(true);
   const [query, setQuery] = useState("");
+  const { requestDrawerRestore } = useDrawer();
+
+  // Popping this screen returns to the chat, so reopen the drawer it was
+  // opened from. Pushing Profile keeps this screen mounted, so it does not
+  // fire there.
+  useEffect(() => () => requestDrawerRestore(), [requestDrawerRestore]);
 
   const needle = query.trim().toLowerCase();
   const groups = GROUPS.map((group) => ({
