@@ -81,7 +81,7 @@ export default function RootLayout() {
 
 function RootDrawer() {
   const router = useRouter();
-  const { isOpen, openDrawer, closeDrawer } = useDrawer();
+  const { isOpen, openDrawer, closeDrawer, requestDrawerRestore } = useDrawer();
 
   useSystemBackgroundColor();
 
@@ -92,16 +92,29 @@ function RootDrawer() {
       onClose={closeDrawer}
       drawerContent={
         <DrawerContent
-          onNavigate={(path) => {
+          onOpenChats={() => {
             closeDrawer();
-            router.replace(path, { withAnchor: true });
+            // Push, not replace: replacing the chat screen leaves nothing to
+            // pop, so Android Back would exit the app instead of going back.
+            router.navigate("/chats");
+          }}
+          onNewChat={() => {
+            closeDrawer();
+            router.replace("/", { withAnchor: true });
           }}
           onOpenSettings={() => {
             // The drawer is a custom overlay, not a navigator: route changes
             // do not dismiss it. Close it first or Settings stays hidden
             // underneath the still-open panel.
             closeDrawer();
+            // Coming back should land on the drawer this was opened from.
+            requestDrawerRestore();
             router.navigate("/(settings)/settings");
+          }}
+          onOpenCapabilities={() => {
+            closeDrawer();
+            requestDrawerRestore();
+            router.navigate("/(settings)/capabilities");
           }}
           onClose={closeDrawer}
         />

@@ -16,9 +16,10 @@ import {
 } from "@/components/chat";
 import { Icon } from "@/components/icon";
 import { MainHeader } from "@/components/main-header";
+import { useDrawer } from "@/components/drawer-content";
 import { useChat } from "@ai-sdk/react";
 import * as Haptics from "expo-haptics";
-import { Link } from "expo-router";
+import { Link, useFocusEffect } from "expo-router";
 import { Plus } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -214,6 +215,16 @@ const useChatImplementation = USE_MOCK ? useMockChat : useAIChat;
 export default function ChatScreen() {
   const chat = useChatImplementation();
   const { isGenerating, streamingStore } = chat;
+  const { openDrawer, takeDrawerRestore } = useDrawer();
+
+  // Returning from a drawer destination should land back on the drawer.
+  useFocusEffect(
+    useCallback(() => {
+      if (!takeDrawerRestore()) return;
+      const frame = requestAnimationFrame(openDrawer);
+      return () => cancelAnimationFrame(frame);
+    }, [openDrawer, takeDrawerRestore]),
+  );
 
   const renderMessage = useCallback(
     ({ item }: { item: ChatMessage }) => {

@@ -5,7 +5,6 @@ import { AvatarMonogram } from "@/components/settings-ui";
 import { SafeAreaView } from "@/components/tw";
 import { MOCK_CHATS } from "@/utils/mock-chats";
 import { cn } from "@/utils/tailwind";
-import type { Href } from "expo-router";
 import {
   ChevronDown,
   ChevronRight,
@@ -33,18 +32,39 @@ type DrawerContextValue = {
   isOpen: boolean;
   openDrawer: () => void;
   closeDrawer: () => void;
+  /** Ask the chat screen to reopen the drawer when it is focused again. */
+  requestDrawerRestore: () => void;
+  /** Returns true once if a restore was requested, then clears it. */
+  takeDrawerRestore: () => boolean;
 };
 
 const DrawerContext = createContext<DrawerContextValue | null>(null);
 
 export function DrawerProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
+  const restoreRef = React.useRef(false);
 
   const openDrawer = useCallback(() => setIsOpen(true), []);
   const closeDrawer = useCallback(() => setIsOpen(false), []);
+  const requestDrawerRestore = useCallback(() => {
+    restoreRef.current = true;
+  }, []);
+  const takeDrawerRestore = useCallback(() => {
+    const pending = restoreRef.current;
+    restoreRef.current = false;
+    return pending;
+  }, []);
 
   return (
-    <DrawerContext value={{ isOpen, openDrawer, closeDrawer }}>
+    <DrawerContext
+      value={{
+        isOpen,
+        openDrawer,
+        closeDrawer,
+        requestDrawerRestore,
+        takeDrawerRestore,
+      }}
+    >
       {children}
     </DrawerContext>
   );
@@ -98,11 +118,15 @@ function relativeTime(daysAgo: number) {
 }
 
 export function DrawerContent({
-  onNavigate,
+  onOpenChats,
+  onNewChat,
+  onOpenCapabilities,
   onOpenSettings,
   onClose,
 }: {
-  onNavigate: (path: Href) => void;
+  onOpenChats: () => void;
+  onNewChat: () => void;
+  onOpenCapabilities: () => void;
   onOpenSettings: () => void;
   onClose: () => void;
 }) {
@@ -155,13 +179,13 @@ export function DrawerContent({
           <DrawerAction
             icon={MessageSquare}
             label="Chats"
-            onPress={() => onNavigate("/chats")}
+            onPress={onOpenChats}
           />
           <RowDivider />
           <DrawerAction
             icon={SlidersHorizontal}
             label="Capabilities"
-            onPress={() => onNavigate("/(settings)/capabilities")}
+            onPress={onOpenCapabilities}
           />
           <RowDivider />
           <DrawerAction
@@ -232,7 +256,7 @@ export function DrawerContent({
           chats.map((chat) => (
             <Pressable
               key={chat.id}
-              onPress={() => onNavigate("/")}
+              onPress={onNewChat}
               className="mb-2 rounded-[22px] bg-card px-4 py-3 active:bg-secondary"
             >
               <Text
@@ -252,7 +276,7 @@ export function DrawerContent({
 
         {chatsOpen && chats.length === 0 && (
           <Text className="px-3 py-6 text-center text-[14px] text-muted-foreground">
-            No chats match “{query.trim()}”.
+            No chats match “{query.trim()}�?
           </Text>
         )}
       </ScrollView>
@@ -271,7 +295,7 @@ export function DrawerContent({
           />
         </View>
         <Pressable
-          onPress={() => onNavigate("/")}
+          onPress={onNewChat}
           accessibilityRole="button"
           accessibilityLabel="New chat"
           className="h-12 w-12 items-center justify-center rounded-full bg-card active:bg-secondary"
