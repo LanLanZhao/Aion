@@ -1,167 +1,269 @@
 import { Icon } from "@/components/icon";
-import { Link } from "expo-router";
-import type { LucideIcon } from "lucide-react-native";
 import {
+  AvatarMonogram,
+  SettingsCard,
+  SettingsRow,
+  SettingsSection,
+  SettingsToggleRow,
+} from "@/components/settings-ui";
+import { cn } from "@/utils/tailwind";
+import * as Application from "expo-application";
+import type { Href } from "expo-router";
+import { useRouter } from "expo-router";
+import {
+  ArrowLeft,
   Bell,
-  ChevronRight,
-  CircleDollarSign,
   CircleUser,
   Globe,
   LayoutGrid,
   Link2,
   LogOut,
+  Pencil,
+  Search,
   ShieldCheck,
   SlidersHorizontal,
   SunMoon,
   TrendingUp,
   Users,
   Vibrate,
+  Wallet,
 } from "lucide-react-native";
+import type { LucideIcon } from "lucide-react-native";
 import { useState } from "react";
-import { Pressable, ScrollView, Switch, Text, View } from "react-native";
+import {
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-export default function SettingsScreen() {
-  const [hapticFeedback, setHapticFeedback] = useState(true);
+const ACCOUNT = {
+  name: "Evan Bacon",
+  email: "developer@expo.dev",
+  initials: "EB",
+};
 
-  return (
-    <ScrollView
-      className="flex-1 bg-background text-foreground"
-      contentInsetAdjustmentBehavior="automatic"
-      contentContainerClassName="android:pb-safe"
-    >
-      {/* Email */}
-      <View className="mx-5 mt-4 mb-5 bg-muted rounded-xl px-4 py-3 border-continuous">
-        <Text
-          selectable
-          className="text-[15px] text-foreground"
-        >
-          developer@expo.dev
-        </Text>
-      </View>
-
-      {/* Account */}
-      <SettingsRow
-        icon={CircleUser}
-        label="Profile"
-        href="/(settings)/profile"
-      />
-      <SettingsRow icon={CircleDollarSign} label="Billing" detail="Max plan" />
-      <SettingsRow icon={TrendingUp} label="Usage" />
-
-      <SectionDivider />
-
-      {/* Features */}
-      <SettingsRow
-        icon={SlidersHorizontal}
-        label="Capabilities"
-        href="/(settings)/capabilities"
-      />
-      <SettingsRow icon={LayoutGrid} label="Connectors" />
-      <SettingsRow icon={Users} label="Permissions" />
-
-      <SectionDivider />
-
-      {/* Preferences */}
-      <SettingsRow icon={SunMoon} label="Appearance" detail="System" />
-      <SettingsRow icon={Globe} label="Speech language" detail="EN" />
-      <SettingsRow icon={Bell} label="Notifications" />
-      <SettingsRow icon={ShieldCheck} label="Privacy" />
-      <SettingsRow icon={Link2} label="Shared links" />
-
-      <SectionDivider />
-
-      {/* Toggles */}
-      <SettingsToggleRow
-        icon={Vibrate}
-        label="Haptic feedback"
-        value={hapticFeedback}
-        onValueChange={setHapticFeedback}
-      />
-
-      <SectionDivider />
-
-      {/* Log out */}
-      <Pressable className="flex-row items-center px-5 py-3.5 gap-4 active:bg-muted">
-        <Icon
-          icon={LogOut}
-          className="w-5 h-5 text-foreground"
-        />
-        <Text className="text-[17px] text-foreground">
-          Log out
-        </Text>
-      </Pressable>
-    </ScrollView>
-  );
-}
-
-function SectionDivider() {
-  return <View className="h-px bg-border mx-5" />;
-}
-
-function SettingsRow({
-  icon,
-  label,
-  detail,
-  href,
-}: {
+type SettingsItem = {
+  key: string;
   icon: LucideIcon;
   label: string;
   detail?: string;
-  href?: string;
-}) {
-  const content = (
-    <View className="flex-row items-center px-5 py-3.5 gap-4 active:bg-muted">
-      <Icon
-        icon={icon}
-        className="w-5 h-5 text-foreground"
-      />
-      <Text className="flex-1 text-[17px] text-foreground">
-        {label}
-      </Text>
-      {detail && (
-        <Text className="text-[15px] text-muted-foreground">
-          {detail}
-        </Text>
-      )}
-      <Icon
-        icon={ChevronRight}
-        className="w-3.5 h-3.5 text-muted-foreground"
-      />
-    </View>
-  );
+  href?: Href;
+  toggle?: boolean;
+};
 
-  if (href) {
-    return (
-      <Link href={href as any} asChild>
-        <Pressable>{content}</Pressable>
-      </Link>
-    );
-  }
+type SettingsGroup = {
+  title: string;
+  items: SettingsItem[];
+};
 
-  return <Pressable>{content}</Pressable>;
-}
+const GROUPS: SettingsGroup[] = [
+  {
+    title: "My Agent",
+    items: [
+      {
+        key: "capabilities",
+        icon: SlidersHorizontal,
+        label: "Capabilities",
+        href: "/(settings)/capabilities",
+      },
+      { key: "connectors", icon: LayoutGrid, label: "Connectors" },
+      { key: "permissions", icon: Users, label: "Permissions" },
+    ],
+  },
+  {
+    title: "Account",
+    items: [
+      {
+        key: "profile",
+        icon: CircleUser,
+        label: "Profile",
+        href: "/(settings)/profile",
+      },
+      { key: "billing", icon: Wallet, label: "Billing", detail: "Max plan" },
+      { key: "usage", icon: TrendingUp, label: "Usage" },
+    ],
+  },
+  {
+    title: "Preferences",
+    items: [
+      {
+        key: "appearance",
+        icon: SunMoon,
+        label: "Appearance",
+        detail: "System",
+      },
+      {
+        key: "language",
+        icon: Globe,
+        label: "Speech language",
+        detail: "EN",
+      },
+      { key: "notifications", icon: Bell, label: "Notifications" },
+      { key: "privacy", icon: ShieldCheck, label: "Privacy" },
+      { key: "shared-links", icon: Link2, label: "Shared links" },
+      {
+        key: "haptics",
+        icon: Vibrate,
+        label: "Haptic feedback",
+        toggle: true,
+      },
+    ],
+  },
+];
 
-function SettingsToggleRow({
-  icon,
-  label,
-  value,
-  onValueChange,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: boolean;
-  onValueChange: (v: boolean) => void;
-}) {
+export default function SettingsScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const [hapticFeedback, setHapticFeedback] = useState(true);
+  const [query, setQuery] = useState("");
+
+  const needle = query.trim().toLowerCase();
+  const groups = GROUPS.map((group) => ({
+    ...group,
+    items: needle
+      ? group.items.filter((item) =>
+          item.label.toLowerCase().includes(needle),
+        )
+      : group.items,
+  })).filter((group) => group.items.length > 0);
+
+  const goBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/");
+    }
+  };
+
   return (
-    <View className="flex-row items-center px-5 py-3 gap-4">
-      <Icon
-        icon={icon}
-        className="w-5 h-5 text-foreground"
-      />
-      <Text className="flex-1 text-[17px] text-foreground">
-        {label}
-      </Text>
-      <Switch value={value} onValueChange={onValueChange} />
+    <View className="flex-1 bg-background">
+      <ScrollView
+        className="flex-1"
+        contentInsetAdjustmentBehavior="never"
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{
+          paddingTop: insets.top + 8,
+          paddingBottom: insets.bottom + 108,
+          paddingHorizontal: 16,
+        }}
+      >
+        <View className="relative items-center pb-1 pt-1">
+          <Pressable
+            onPress={goBack}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            className="h-10 w-10 items-center justify-center rounded-full border border-border bg-card active:bg-muted"
+            style={{ position: "absolute", left: 0, top: 0 }}
+          >
+            <Icon icon={ArrowLeft} className="h-5 w-5 text-foreground" />
+          </Pressable>
+
+          <Pressable
+            onPress={() => router.push("/(settings)/profile")}
+            accessibilityRole="button"
+            accessibilityLabel="Edit profile"
+            className="active:opacity-80"
+          >
+            <AvatarMonogram initials={ACCOUNT.initials} />
+            <View
+              className="items-center justify-center rounded-full border-[3px] border-background bg-card"
+              style={{
+                position: "absolute",
+                right: -2,
+                bottom: -2,
+                width: 28,
+                height: 28,
+              }}
+            >
+              <Icon icon={Pencil} className="h-3 w-3 text-foreground" />
+            </View>
+          </Pressable>
+
+          <Text className="mt-3 text-[20px] font-semibold text-foreground">
+            {ACCOUNT.name}
+          </Text>
+          <Text className="mt-0.5 text-[13px] text-muted-foreground">
+            {ACCOUNT.email}
+          </Text>
+        </View>
+
+        {groups.map((group) => (
+          <SettingsSection key={group.title} title={group.title}>
+            {group.items.map((item) =>
+              item.toggle ? (
+                <SettingsToggleRow
+                  key={item.key}
+                  icon={item.icon}
+                  label={item.label}
+                  value={hapticFeedback}
+                  onValueChange={setHapticFeedback}
+                />
+              ) : (
+                <SettingsRow
+                  key={item.key}
+                  icon={item.icon}
+                  label={item.label}
+                  detail={item.detail}
+                  href={item.href}
+                />
+              ),
+            )}
+          </SettingsSection>
+        ))}
+
+        {groups.length === 0 && (
+          <View className="mt-16 items-center">
+            <Text className="text-[15px] text-muted-foreground">
+              No settings match “{query.trim()}”.
+            </Text>
+          </View>
+        )}
+
+        {needle === "" && (
+          <>
+            <View className="mt-7">
+              <SettingsCard>
+                <SettingsRow
+                  icon={LogOut}
+                  label="Log out"
+                  danger
+                  showChevron={false}
+                />
+              </SettingsCard>
+            </View>
+            <Text className="mt-6 text-center text-[12px] text-muted-foreground">
+              {Application.applicationName}{" "}
+              {Application.nativeApplicationVersion} (
+              {Application.nativeBuildVersion})
+            </Text>
+          </>
+        )}
+      </ScrollView>
+
+      <View
+        style={{
+          position: "absolute",
+          left: 16,
+          right: 16,
+          bottom: Math.max(insets.bottom, 8) + 8,
+        }}
+      >
+        <View className="h-12 flex-row items-center gap-2.5 rounded-full border border-border bg-card px-4 shadow-float">
+          <Icon icon={Search} className="h-4 w-4 text-muted-foreground" />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search settings"
+            placeholderTextColor="#8E8E93"
+            returnKeyType="search"
+            className={cn("flex-1 text-[15px] text-foreground")}
+          />
+        </View>
+      </View>
     </View>
   );
 }
