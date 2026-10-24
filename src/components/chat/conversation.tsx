@@ -1,15 +1,17 @@
 import { SymbolImage } from "@/components/symbol-image";
-import { LegendList, LegendListRef } from "@legendapp/list";
+import { type LegendListRef } from "@legendapp/list";
+import { AnimatedLegendList } from "@legendapp/list/reanimated";
 import {
   createContext,
   use,
   useCallback,
+  useEffect,
   useRef,
   useState,
   type ReactElement,
   type ReactNode,
 } from "react";
-import { LayoutChangeEvent, Text, View } from "react-native";
+import { LayoutChangeEvent, Text, View, type ScrollViewProps } from "react-native";
 import { useKeyboardHandler } from "react-native-keyboard-controller";
 import Animated, {
   runOnJS,
@@ -28,10 +30,8 @@ import { useChatContext } from "./chat-context";
 import type { ChatMessage } from "./types";
 
 const IS_GLASS = isLiquidGlassAvailable();
+const IS_ANDROID = process.env.EXPO_OS === "android";
 
-const AnimatedLegendList = Animated.createAnimatedComponent(LegendList);
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Reanimated animated styles are opaque worklet objects
 type AnimatedStyle = any;
 
 type ConversationContextValue = {
@@ -67,6 +67,8 @@ export function Conversation({
   /** Compound children: <ConversationScrollButton />, <PromptInput />, etc. */
   children?: ReactNode;
 }) {
+  // Reanimated worklets own mutable shared values outside React's render model.
+  "use no memo";
   const { messages } = useChatContext();
   const listRef = useRef<LegendListRef>(null);
   const insets = useSafeAreaInsets();
@@ -139,14 +141,16 @@ export function Conversation({
 
   const isAtBottom = useDerivedValue(() => {
     const maxScrollY =
-      totalContentHeight.value - scrollViewHeight.value + bottomInset.value;
+      totalContentHeight.value - scrollViewHeight.value +
+      (IS_ANDROID ? 0 : bottomInset.value);
     if (maxScrollY <= 0) return true;
     return maxScrollY - scrollY.value <= SCROLL_THRESHOLD;
   });
 
   const shouldShowScrollButton = useDerivedValue(() => {
     const maxScrollY =
-      totalContentHeight.value - scrollViewHeight.value + bottomInset.value;
+      totalContentHeight.value - scrollViewHeight.value +
+      (IS_ANDROID ? 0 : bottomInset.value);
     if (maxScrollY <= 50) return false;
     return !isAtBottom.value;
   });
@@ -155,13 +159,13 @@ export function Conversation({
 
   const onScrollViewLayout = useCallback((e: LayoutChangeEvent) => {
     scrollViewHeight.value = e.nativeEvent.layout.height;
-  }, []);
+  }, [scrollViewHeight]);
 
   const onScroll = useCallback(
     (event: { nativeEvent: { contentOffset: { y: number } } }) => {
       scrollY.value = event.nativeEvent.contentOffset.y;
     },
-    [],
+    [scrollY],
   );
 
   const onContentSizeChange = useCallback((_width: number, height: number) => {
@@ -179,19 +183,21 @@ export function Conversation({
       requestAnimationFrame(() => {
         listRef.current?.scrollToEnd({
           animated: true,
-          viewOffset: -bottomInset.value,
+          ...(IS_ANDROID ? {} : { viewOffset: -bottomInset.value }),
         });
       });
     }
-  }, []);
+  }, [bottomInset, currentFooterHeight, isAtBottom, lastContentHeight, messagesOnlyHeight, totalContentHeight]);
 
   const scrollToBottom = useCallback(() => {
     listRef.current?.scrollToEnd({
       animated: true,
-      viewOffset: -bottomInset.value,
+      ...(IS_ANDROID ? {} : { viewOffset: -bottomInset.value }),
     });
-  }, []);
-  scrollToBottomRef.current = scrollToBottom;
+  }, [bottomInset]);
+  useEffect(() => {
+    scrollToBottomRef.current = scrollToBottom;
+  }, [scrollToBottom]);
 
   // -- Animated styles -----------------------------------------------------
   const topPadding = IS_GLASS ? 128 : 16;
@@ -203,10 +209,13 @@ export function Conversation({
     const keyboard = Math.abs(keyboardHeight.value);
     const bottom = composerHeight.value + Math.max(insets.bottom, keyboard);
     const blankSpace = scrollHeight - messagesOnlyHeight.value - bottom;
-    const footerHeight = Math.max(0, blankSpace - topPadding);
+    // Android ignores ScrollView.contentInset. Include the occupied area in
+    // the actual scrollable footer so the final message clears the composer.
+    const footerHeight = Math.max(0, blankSpace - topPadding) +
+      (IS_ANDROID ? bottom : 0);
 
     currentFooterHeight.value = footerHeight;
-    return { height: footerHeight };
+    return { height: footerHeight, paddingBottom: IS_ANDROID ? bottom : 0 };
   });
 
   const promptInputStyle = useAnimatedStyle(() => ({
@@ -230,7 +239,10 @@ export function Conversation({
       12,
   }));
 
-  const listAnimatedProps = useAnimatedProps(() => {
+  const listAnimatedProps = useAnimatedProps<
+    Pick<ScrollViewProps, "contentInset" | "scrollIndicatorInsets">
+  >(() => {
+    if (IS_ANDROID) return {};
     const keyboard = Math.abs(keyboardHeightForInset.value);
     const bottom = composerHeight.value + Math.max(insets.bottom, keyboard);
     return {
@@ -243,7 +255,7 @@ export function Conversation({
     const h = e.nativeEvent.layout.height;
     composerHeight.value = h;
     setComposerOffsetHeight(h);
-  }, []);
+  }, [composerHeight]);
 
   // -- Context value -------------------------------------------------------
 
@@ -275,7 +287,8 @@ export function Conversation({
               // transparent header spacing.
               paddingBottom: 8,
             }}
-            keyboardDismissMode="interactive"
+            keyboardDismissMode={IS_ANDROID ? "none" : "interactive"}
+            keyboardShouldPersistTaps="handled"
             automaticallyAdjustsScrollIndicatorInsets={false}
             maintainVisibleContentPosition
             estimatedItemSize={80}

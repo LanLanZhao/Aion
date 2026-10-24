@@ -9,6 +9,7 @@ import {
 } from "lucide-react-native";
 
 import { withUniwind } from "uniwind";
+import { Icon as ThemedIcon } from "./icon";
 
 const Image = withUniwind(ExpoImage);
 
@@ -55,6 +56,14 @@ export function SymbolImage({
     );
   }
 
-  const Icon = LUCIDE_FALLBACKS[name] ?? HelpCircle;
-  return <Icon size={size} color={tintColor} style={style as any} />;
+  return (
+    <ThemedIcon
+      icon={LUCIDE_FALLBACKS[name] ?? HelpCircle}
+      className={className}
+      style={[
+        { width: size, height: size, ...(tintColor ? { color: tintColor } : {}) },
+        style,
+      ]}
+    />
+  );
 }

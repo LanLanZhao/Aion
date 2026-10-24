@@ -154,8 +154,8 @@ export function PromptInputTextarea({
     <TextInput
       ref={inputRef}
       nativeID="composer"
-      cursorColorClassName="tint-foreground"
-      selectionColorClassName="tint-foreground"
+      cursorColorClassName="accent-foreground"
+      selectionColorClassName="accent-foreground"
       style={{ fontSize: 16 }}
       className="flex-1 pl-4 pr-2 py-3 text-foreground max-h-25"
       value={input}
@@ -177,23 +177,22 @@ export function PromptInputSubmit() {
 
   return (
     <Pressable
-      style={({ pressed }) => ({
+      style={{
         width: 34,
         height: 34,
         borderRadius: 17,
         borderCurve: "continuous",
         justifyContent: "center",
         alignItems: "center",
-        opacity: pressed ? 0.7 : 1,
         margin: 5,
-      })}
-      className={disabled ? "bg-secondary" : "bg-foreground"}
+      }}
+      className={cn("active:opacity-70", disabled ? "bg-secondary" : "bg-foreground")}
       onPress={onSend}
       disabled={disabled}
     >
       {isGenerating ? (
         <Animated.View entering={FadeIn} exiting={FadeOut}>
-          <ActivityIndicator size="small" colorClassName="tint-foreground" className="text-foreground" />
+          <ActivityIndicator size="small" colorClassName="accent-foreground" className="text-foreground" />
         </Animated.View>
       ) : (
           <SymbolImage

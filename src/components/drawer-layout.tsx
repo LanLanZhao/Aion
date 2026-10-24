@@ -6,6 +6,7 @@
 import * as Haptics from "expo-haptics";
 import * as React from "react";
 import {
+  BackHandler,
   InteractionManager,
   Keyboard,
   Pressable,
@@ -34,7 +35,9 @@ const GestureHandlerRootView = withUniwind(XGestureHandlerRootView);
 
 const APPROX_APP_BAR_HEIGHT = 56;
 const DEFAULT_DRAWER_WIDTH = 360;
-const SWIPE_EDGE_WIDTH = 32;
+// Android reserves the outer edge for system Back. Leave an app gesture area
+// just inside it so opening the drawer remains reachable in gesture navigation.
+const SWIPE_EDGE_WIDTH = process.env.EXPO_OS === "android" ? 64 : 32;
 const SWIPE_MIN_OFFSET = 5;
 const SWIPE_MIN_DISTANCE = 60;
 const SWIPE_MIN_VELOCITY = 500;
@@ -71,6 +74,8 @@ export function DrawerLayout({
   swipeEnabled = true,
   children,
 }: DrawerLayoutProps) {
+  // Gesture callbacks update Reanimated shared values on the UI thread.
+  "use no memo";
   const { width: layoutWidth } = useWindowDimensions();
   const drawerWidth = getDrawerWidth(layoutWidth, drawerWidthProp);
 
@@ -97,6 +102,17 @@ export function DrawerLayout({
       interactionHandleRef.current = null;
     }
   }, []);
+
+  React.useEffect(() => endInteraction, [endInteraction]);
+
+  React.useEffect(() => {
+    if (process.env.EXPO_OS !== "android" || !open) return;
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      onCloseRef.current();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [open]);
 
   const touchStartX = useSharedValue(0);
   const touchX = useSharedValue(0);
@@ -195,6 +211,10 @@ export function DrawerLayout({
         toggleDrawer(nextOpen, event.velocityX);
         runOnJS(onGestureFinish)(nextOpen);
       })
+      .onFinalize(() => {
+        "worklet";
+        runOnJS(endInteraction)();
+      })
       .activeOffsetX([-SWIPE_MIN_OFFSET, SWIPE_MIN_OFFSET])
       .failOffsetY([-SWIPE_MIN_OFFSET, SWIPE_MIN_OFFSET])
       .enabled(swipeEnabled);
@@ -208,6 +228,7 @@ export function DrawerLayout({
     return gesture;
   }, [
     drawerWidth,
+    endInteraction,
     gestureState,
     onGestureBegin,
     onGestureFinish,

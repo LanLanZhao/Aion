@@ -208,9 +208,12 @@ function useMockChat() {
   };
 }
 
+// The build-time mode selects one hook for the lifetime of this bundle.
+const useChatImplementation = USE_MOCK ? useMockChat : useAIChat;
+
 export default function ChatScreen() {
-  const chat = USE_MOCK ? useMockChat() : useAIChat();
-  const { messages, isGenerating, streamingStore } = chat;
+  const chat = useChatImplementation();
+  const { isGenerating, streamingStore } = chat;
 
   const renderMessage = useCallback(
     ({ item }: { item: ChatMessage }) => {
