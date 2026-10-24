@@ -13,6 +13,8 @@
       }
     },
     "android": {
+      "package": "com.aion.chat",
+      "softwareKeyboardLayoutMode": "resize",
       "predictiveBackGestureEnabled": false
     },
     "web": {
