@@ -1,7 +1,6 @@
 import {
   ChatProvider,
   Conversation,
-  ConversationEmptyState,
   ConversationScrollButton,
   Message,
   MessageResponse,
@@ -15,13 +14,15 @@ import {
   type ChatMessage,
 } from "@/components/chat";
 import { Icon } from "@/components/icon";
+import { ModelChip } from "@/components/model-chip";
 import { MainHeader } from "@/components/main-header";
 import { useDrawer } from "@/components/drawer-content";
 import { useChat } from "@ai-sdk/react";
 import * as Haptics from "expo-haptics";
 import { Link, useFocusEffect } from "expo-router";
-import { Plus } from "lucide-react-native";
+import { HatGlasses, MessageSquare, Plus } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Text, View } from "react-native";
 
 const USE_MOCK = process.env.EXPO_PUBLIC_MOCK_AI === "1";
 
@@ -66,6 +67,7 @@ function useAIChat() {
   const {
     messages: uiMessages,
     sendMessage,
+    setMessages,
     status,
     error,
   } = useChat();
@@ -114,12 +116,19 @@ function useAIChat() {
     setInput("");
   }, [input, isStreaming, sendMessage]);
 
+  const clear = useCallback(() => {
+    setMessages([]);
+    prevStreamingTextRef.current = "";
+    streamingStore.set("");
+  }, [setMessages, streamingStore]);
+
   return {
     messages,
     input,
     setInput,
     isGenerating: isStreaming,
     onSend,
+    clear,
     streamingStore,
     error: error ?? null,
   };
@@ -199,12 +208,19 @@ function useMockChat() {
     }
   }, [input, isGenerating, messages, streamingStore]);
 
+  const clearMessages = useCallback(() => {
+    setMessages([]);
+    streamingRef.current = "";
+    streamingStore.set("");
+  }, [streamingStore]);
+
   return {
     messages,
     input,
     setInput,
     isGenerating,
     onSend: handleSend,
+    clear: clearMessages,
     streamingStore,
   };
 }
@@ -249,33 +265,64 @@ export default function ChatScreen() {
     [isGenerating, streamingStore],
   );
 
+  const [privateMode, setPrivateMode] = useState(false);
+  const { clear } = chat;
+
+  const togglePrivate = useCallback(() => {
+    // Nothing carries into a private chat, and leaving one discards it.
+    clear();
+    setPrivateMode((previous) => !previous);
+  }, [clear]);
+
   return (
     <>
       <ChatProvider value={chat}>
         <Conversation
           renderMessage={renderMessage}
-          emptyState={
-            <ConversationEmptyState
-              title="Chat"
-              description="Send a message to get started"
-            />
-          }
+          emptyState={<ChatEmptyState privateMode={privateMode} />}
         >
           <ConversationScrollButton />
           <PromptInput>
-            <Link href="/attachments" asChild>
-              <PromptInputAction>
-                <Icon icon={Plus} className="w-5 h-5 text-muted-foreground" />
-              </PromptInputAction>
-            </Link>
             <PromptInputBody>
-              <PromptInputTextarea />
-              <PromptInputSubmit />
+              <PromptInputTextarea
+                placeholder={privateMode ? "Temporary chat" : "Ask anything..."}
+              />
+              <View className="mt-2 flex-row items-center gap-2">
+                <Link href="/attachments" asChild>
+                  <PromptInputAction accessibilityLabel="Add attachment">
+                    <Icon icon={Plus} className="h-4 w-4 text-foreground" />
+                  </PromptInputAction>
+                </Link>
+                <ModelChip />
+                <View className="flex-1" />
+                <PromptInputSubmit />
+              </View>
             </PromptInputBody>
           </PromptInput>
         </Conversation>
       </ChatProvider>
-      <MainHeader />
+      <MainHeader privateMode={privateMode} onTogglePrivate={togglePrivate} />
     </>
+  );
+}
+
+function ChatEmptyState({ privateMode }: { privateMode: boolean }) {
+  return (
+    <View className="flex-1 items-center justify-center px-10">
+      <View style={{ opacity: 0.16 }}>
+        <Icon
+          icon={privateMode ? HatGlasses : MessageSquare}
+          className="h-28 w-28 text-foreground"
+        />
+      </View>
+      <Text className="mt-8 text-[22px] font-semibold text-foreground">
+        {privateMode ? "Private chat" : "Chat"}
+      </Text>
+      <Text className="mt-2 text-center text-[15px] leading-relaxed text-muted-foreground">
+        {privateMode
+          ? "This chat won't appear in your history and isn't used for training."
+          : "Ask anything to get started."}
+      </Text>
+    </View>
   );
 }

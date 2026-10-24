@@ -1,25 +1,22 @@
-import { SymbolImage } from "@/components/symbol-image";
-import { TouchableGlass } from "@/components/touchable-glass";
-import {
-  GlassContainer,
-  GlassView,
-  isLiquidGlassAvailable,
-} from "expo-glass-effect";
+import { cn } from "@/utils/tailwind";
+import { ArrowUp } from "lucide-react-native";
 import { useEffect, useRef, type ReactNode } from "react";
-import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 
-import { cn } from "@/utils/tailwind";
-import { BlurView } from "expo-blur";
+import { Icon } from "@/components/icon";
 import { useChatContext } from "./chat-context";
 import { useConversationContext } from "./conversation";
 
-const AnimatedGlassContainer = Animated.createAnimatedComponent(GlassContainer);
-
 /**
  * Root container for the message composer. Positions itself at the bottom of
- * the `<Conversation />` using the shared conversation context. Children are
- * laid out in a horizontal row inside a glass container.
+ * the `<Conversation />` using the shared conversation context.
  */
 export function PromptInput({ children }: { children: ReactNode }) {
   const { promptInputStyle, onPromptInputLayout } = useConversationContext();
@@ -31,18 +28,9 @@ export function PromptInput({ children }: { children: ReactNode }) {
       style={[{ position: "absolute", left: 0, right: 0 }, promptInputStyle]}
     >
       {error && <PromptInputError message={error.message} />}
-      <AnimatedGlassContainer
-        style={{
-          flex: 1,
-          flexDirection: "row",
-          padding: 12,
-          gap: 10,
-          alignItems: "flex-end",
-        }}
-        spacing={8}
-      >
+      <View className="mx-3 rounded-[26px] border border-border bg-card px-3 pb-2 pt-3">
         {children}
-      </AnimatedGlassContainer>
+      </View>
     </Animated.View>
   );
 }
@@ -50,11 +38,9 @@ export function PromptInput({ children }: { children: ReactNode }) {
 function PromptInputError({ message }: { message?: string }) {
   return (
     <Animated.View entering={FadeIn.duration(200)} className="px-3 pb-2">
-      <View
-        className="flex-row items-center gap-2 rounded-xl bg-card px-3 py-2.5 border-continuous"
-      >
+      <View className="flex-row items-center gap-2 rounded-xl border border-border bg-card px-3 py-2.5 border-continuous">
         <View
-          className="w-2 h-2 rounded-full"
+          className="h-2 w-2 rounded-full"
           style={{ backgroundColor: "#EF4444" }}
         />
         <Text
@@ -68,66 +54,31 @@ function PromptInputError({ message }: { message?: string }) {
   );
 }
 
-/**
- * A circular glass button for actions (e.g. attachments, camera).
- */
-export function PromptInputAction(props: {
+/** Circular control used in the composer's bottom row. */
+export function PromptInputAction({
+  children,
+  onPress,
+  accessibilityLabel,
+}: {
   children: ReactNode;
   onPress?: () => void;
+  accessibilityLabel?: string;
 }) {
   return (
-    <TouchableGlass
-      hitSlop={4}
-      {...props}
-      style={{
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    />
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      className="h-9 w-9 items-center justify-center rounded-full bg-secondary active:opacity-70"
+    >
+      {children}
+    </Pressable>
   );
 }
 
-/**
- * Glass-wrapped container for the textarea and submit button.
- */
+/** Column wrapper: the textarea sits above the control row. */
 export function PromptInputBody({ children }: { children: ReactNode }) {
-  if (isLiquidGlassAvailable()) {
-    return (
-      <GlassView
-        isInteractive
-        glassEffectStyle="regular"
-        className="border-continuous"
-        style={{
-          flex: 1,
-          flexDirection: "row",
-
-          borderRadius: 22,
-        }}
-      >
-        {children}
-      </GlassView>
-    );
-  }
-
-  // TODO: Android version...
-  return (
-    <BlurView
-      tint="systemChromeMaterial"
-      className="border-continuous"
-      style={{
-        flex: 1,
-        flexDirection: "row",
-
-        overflow: "hidden",
-        borderRadius: 22,
-      }}
-    >
-      {children}
-    </BlurView>
-  );
+  return <View>{children}</View>;
 }
 
 /**
@@ -157,10 +108,11 @@ export function PromptInputTextarea({
       cursorColorClassName="accent-foreground"
       selectionColorClassName="accent-foreground"
       style={{ fontSize: 16 }}
-      className="flex-1 pl-4 pr-2 py-3 text-foreground max-h-25"
+      className="min-h-[44px] px-1 py-1 text-foreground max-h-25"
       value={input}
       onChangeText={setInput}
       placeholder={placeholder}
+      placeholderTextColor="#8E8E93"
       multiline
       maxLength={maxLength}
     />
@@ -178,34 +130,38 @@ export function PromptInputSubmit() {
   return (
     <Pressable
       style={{
-        width: 34,
-        height: 34,
-        borderRadius: 17,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         borderCurve: "continuous",
         justifyContent: "center",
         alignItems: "center",
-        margin: 5,
       }}
-      className={cn("active:opacity-70", disabled ? "bg-secondary" : "bg-foreground")}
+      className={cn(
+        "active:opacity-70",
+        disabled ? "bg-secondary" : "bg-foreground",
+      )}
       onPress={onSend}
       disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel="Send message"
     >
       {isGenerating ? (
         <Animated.View entering={FadeIn} exiting={FadeOut}>
-          <ActivityIndicator size="small" colorClassName="accent-foreground" className="text-foreground" />
+          <ActivityIndicator
+            size="small"
+            colorClassName="accent-foreground"
+            className="text-foreground"
+          />
         </Animated.View>
       ) : (
-          <SymbolImage
-            name="arrow.up"
-            size={16}
-            sfEffect="scale/up"
-            className={cn(
-              "font-semibold",
-              disabled
-                ? "text-muted-foreground"
-                : "text-background",
-            )}
-          />
+        <Icon
+          icon={ArrowUp}
+          className={cn(
+            "h-4 w-4",
+            disabled ? "text-muted-foreground" : "text-background",
+          )}
+        />
       )}
     </Pressable>
   );

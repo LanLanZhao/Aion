@@ -1,77 +1,64 @@
 import { Icon } from "@/components/icon";
-import { useModel } from "@/components/model-context";
-import { Link, Stack } from "expo-router";
-import { ChevronDown, Glasses, Menu } from "lucide-react-native";
+import { cn } from "@/utils/tailwind";
+import { Stack } from "expo-router";
+import { HatGlasses, Menu } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 import { useDrawer } from "./drawer-content";
 
-function HeaderTitleMenu() {
-  const { models, selectedModel, extendedThinking } = useModel();
-  const selected = models.find((m) => m.id === selectedModel);
-  const subtitle = extendedThinking ? "Extended" : undefined;
+export type MainHeaderProps = {
+  privateMode?: boolean;
+  onTogglePrivate?: () => void;
+};
 
-  return (
-    <Link href="/model-picker" asChild>
-      <Pressable
-        accessibilityRole="button"
-        className="px-2 py-1 rounded-md active:bg-muted flex-col items-center self-center"
-      >
-        <View className="flex-row items-center gap-1">
-          <Text className="text-[17px] font-semibold text-foreground">
-            {selected?.label ?? "Model"}
-          </Text>
-          <Icon icon={ChevronDown} className="w-3 h-3 text-foreground" />
-        </View>
-        {subtitle && (
-          <Text className="text-[12px] text-muted-foreground">{subtitle}</Text>
-        )}
-      </Pressable>
-    </Link>
-  );
-}
-
-export function MainHeader() {
+export function MainHeader({
+  privateMode = false,
+  onTogglePrivate,
+}: MainHeaderProps) {
   const { openDrawer } = useDrawer();
+
   return (
     <>
-      {process.env.EXPO_OS === "ios" ? (
-        <Stack.Toolbar placement="left">
-          <Stack.Toolbar.Button icon="list.bullet" onPress={openDrawer} />
-        </Stack.Toolbar>
-      ) : (
-        // TODO: Migrate to unified Toolbar support for Android in SDK 56
-        <Stack.Toolbar placement="left" asChild>
-          <Pressable
-            onPress={openDrawer}
-            accessibilityLabel="Open drawer"
-            accessibilityRole="button"
-            className="p-2 -ml-1 active:opacity-60"
-          >
-            <Icon icon={Menu} className="w-6 h-6 text-foreground" />
-          </Pressable>
-        </Stack.Toolbar>
-      )}
+      <Stack.Toolbar placement="left" asChild>
+        <Pressable
+          onPress={openDrawer}
+          accessibilityLabel="Open drawer"
+          accessibilityRole="button"
+          className="h-10 w-10 items-center justify-center rounded-full bg-secondary active:opacity-70"
+        >
+          <Icon icon={Menu} className="h-5 w-5 text-foreground" />
+        </Pressable>
+      </Stack.Toolbar>
 
       <Stack.Screen.Title asChild>
-        <HeaderTitleMenu />
+        <View className="items-center">
+          <Text className="text-[17px] font-semibold text-foreground">
+            Chat
+          </Text>
+          <View className="mt-0.5 h-[2px] w-6 rounded-full bg-foreground" />
+        </View>
       </Stack.Screen.Title>
 
-      {process.env.EXPO_OS === "ios" ? (
-        <Stack.Toolbar placement="right">
-          <Stack.Toolbar.Button icon="eyeglasses" />
-        </Stack.Toolbar>
-      ) : (
-        // TODO: Migrate to unified Toolbar support for Android in SDK 56
-        <Stack.Toolbar placement="right" asChild>
-          <Pressable
-            accessibilityLabel="Reader"
-            accessibilityRole="button"
-            className="p-2 -mr-1 active:opacity-60"
-          >
-            <Icon icon={Glasses} className="w-6 h-6 text-foreground" />
-          </Pressable>
-        </Stack.Toolbar>
-      )}
+      <Stack.Toolbar placement="right" asChild>
+        <Pressable
+          onPress={onTogglePrivate}
+          accessibilityRole="button"
+          accessibilityLabel={
+            privateMode ? "Leave private chat" : "Start a private chat"
+          }
+          className={cn(
+            "h-10 w-10 items-center justify-center rounded-full active:opacity-70",
+            privateMode ? "bg-foreground" : "bg-secondary",
+          )}
+        >
+          <Icon
+            icon={HatGlasses}
+            className={cn(
+              "h-5 w-5",
+              privateMode ? "text-background" : "text-foreground",
+            )}
+          />
+        </Pressable>
+      </Stack.Toolbar>
     </>
   );
 }
