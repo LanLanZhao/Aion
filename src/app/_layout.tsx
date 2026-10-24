@@ -103,6 +103,7 @@ function RootDrawer() {
             closeDrawer();
             router.navigate("/(settings)/settings");
           }}
+          onClose={closeDrawer}
         />
       }
     >
