@@ -2,6 +2,10 @@ import "@/global.css";
 
 import { Icon } from "@/components/icon";
 import { AvatarMonogram } from "@/components/settings-ui";
+import {
+  ChatActionsSheet,
+  type ChatActionTarget,
+} from "@/components/chat-actions-sheet";
 import { SafeAreaView } from "@/components/tw";
 import { MOCK_CHATS } from "@/utils/mock-chats";
 import { cn } from "@/utils/tailwind";
@@ -11,6 +15,7 @@ import {
   ChevronUp,
   ChevronsRight,
   MessageSquare,
+  Pin,
   Search,
   Settings,
   SlidersHorizontal,
@@ -132,11 +137,37 @@ export function DrawerContent({
 }) {
   const [chatsOpen, setChatsOpen] = useState(true);
   const [query, setQuery] = useState("");
+  const [chats, setChats] = useState(MOCK_CHATS);
+  const [pinned, setPinned] = useState<string[]>([]);
+  const [actionTarget, setActionTarget] = useState<ChatActionTarget>(null);
 
   const needle = query.trim().toLowerCase();
-  const chats = needle
-    ? MOCK_CHATS.filter((chat) => chat.title.toLowerCase().includes(needle))
-    : MOCK_CHATS;
+  const visibleChats = (needle
+    ? chats.filter((chat) => chat.title.toLowerCase().includes(needle))
+    : chats
+  )
+    .slice()
+    .sort(
+      (a, b) => Number(pinned.includes(b.id)) - Number(pinned.includes(a.id)),
+    );
+
+  const deleteChat = useCallback((id: string) => {
+    setChats((previous) => previous.filter((chat) => chat.id !== id));
+  }, []);
+
+  const renameChat = useCallback((id: string, title: string) => {
+    setChats((previous) =>
+      previous.map((chat) => (chat.id === id ? { ...chat, title } : chat)),
+    );
+  }, []);
+
+  const togglePin = useCallback((id: string) => {
+    setPinned((previous) =>
+      previous.includes(id)
+        ? previous.filter((entry) => entry !== id)
+        : [...previous, id],
+    );
+  }, []);
 
   return (
     <SafeAreaView
@@ -253,28 +284,44 @@ export function DrawerContent({
         </View>
 
         {chatsOpen &&
-          chats.map((chat) => (
+          visibleChats.map((chat) => (
             <Pressable
               key={chat.id}
               onPress={onNewChat}
+              onLongPress={() =>
+                setActionTarget({
+                  id: chat.id,
+                  title: chat.title,
+                  pinned: pinned.includes(chat.id),
+                })
+              }
+              delayLongPress={350}
               className="mb-2 rounded-[22px] bg-card px-4 py-3 active:bg-secondary"
             >
-              <Text
-                numberOfLines={1}
-                className={cn(
-                  "text-[16px] text-foreground",
-                  chat.id === "1" && "font-semibold",
+              <View className="flex-row items-center gap-1.5">
+                {pinned.includes(chat.id) && (
+                  <Icon
+                    icon={Pin}
+                    className="h-3.5 w-3.5 text-muted-foreground"
+                  />
                 )}
-              >
-                {chat.title}
-              </Text>
+                <Text
+                  numberOfLines={1}
+                  className={cn(
+                    "flex-1 text-[16px] text-foreground",
+                    chat.id === "1" && "font-semibold",
+                  )}
+                >
+                  {chat.title}
+                </Text>
+              </View>
               <Text className="mt-0.5 text-[13px] text-muted-foreground">
                 {relativeTime(chat.daysAgo)}
               </Text>
             </Pressable>
           ))}
 
-        {chatsOpen && chats.length === 0 && (
+        {chatsOpen && visibleChats.length === 0 && (
           <Text className="px-3 py-6 text-center text-[14px] text-muted-foreground">
             No chats match “{query.trim()}�?
           </Text>
@@ -303,6 +350,15 @@ export function DrawerContent({
           <Icon icon={SquarePen} className="h-5 w-5 text-foreground" />
         </Pressable>
       </View>
+
+      <ChatActionsSheet
+        key={actionTarget?.id ?? "closed"}
+        target={actionTarget}
+        onClose={() => setActionTarget(null)}
+        onDelete={deleteChat}
+        onRename={renameChat}
+        onTogglePin={togglePin}
+      />
     </SafeAreaView>
   );
 }

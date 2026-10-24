@@ -1,11 +1,17 @@
 import { useDrawer } from "@/components/drawer-content";
+import {
+  ChatActionsSheet,
+  type ChatActionTarget,
+} from "@/components/chat-actions-sheet";
 import { Icon } from "@/components/icon";
 import { MOCK_CHATS, type MockChat } from "@/utils/mock-chats";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
-import { Color, Link, Stack, useRouter } from "expo-router";
+import { Color, Stack, useRouter } from "expo-router";
 import { Menu, Search } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, FlatList, Pressable, Text, View } from "react-native";
+import { FlatList, Pressable, Text, View } from "react-native";
+
+const IS_IOS = process.env.EXPO_OS === "ios";
 
 type Filter = "all" | "starred";
 
@@ -19,47 +25,31 @@ type Chat = MockChat;
 
 function ChatRow({
   item,
-  onRename,
-  onDelete,
-  onStar,
+  onLongPress,
 }: {
   item: Chat;
-  onRename: () => void;
-  onDelete: () => void;
-  onStar: () => void;
+  onLongPress?: () => void;
 }) {
-  return (
-    <Link href="/" asChild>
-      <Link.Trigger>
-        <Pressable className="mx-4 mb-2 gap-0.5 rounded-[22px] border border-border bg-card px-4 py-3 active:bg-secondary">
-          <Text
-            numberOfLines={1}
-            className="text-[16px] text-foreground"
-            selectable
-          >
-            {item.title}
-          </Text>
-          <Text className="text-[13px] text-muted-foreground">
-            {formatTimeAgo(item.daysAgo)}
-          </Text>
-        </Pressable>
-      </Link.Trigger>
+  const router = useRouter();
 
-      <Link.Menu>
-        <Link.MenuAction
-          title={item.starred ? "Unstar" : "Star"}
-          icon={item.starred ? "star.fill" : "star"}
-          onPress={onStar}
-        />
-        <Link.MenuAction title="Rename" icon="pencil" onPress={onRename} />
-        <Link.MenuAction
-          title="Delete"
-          icon="trash"
-          destructive
-          onPress={onDelete}
-        />
-      </Link.Menu>
-    </Link>
+  return (
+    <Pressable
+      onPress={() => router.push("/")}
+      onLongPress={onLongPress}
+      delayLongPress={350}
+      className="mx-4 mb-2 gap-0.5 rounded-[22px] border border-border bg-card px-4 py-3 active:bg-secondary"
+    >
+      <Text
+        numberOfLines={1}
+        className="text-[16px] text-foreground"
+        selectable
+      >
+        {item.title}
+      </Text>
+      <Text className="text-[13px] text-muted-foreground">
+        {formatTimeAgo(item.daysAgo)}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -78,6 +68,7 @@ export default function ChatsScreen() {
   const [search, setSearch] = useState("");
   const [chats, setChats] = useState(MOCK_CHATS);
   const [filter, setFilter] = useState<Filter>("all");
+  const [actionTarget, setActionTarget] = useState<ChatActionTarget>(null);
   const { requestDrawerRestore } = useDrawer();
 
   // Popping this screen returns to the chat, so reopen the drawer it was
@@ -97,46 +88,21 @@ export default function ChatsScreen() {
     return results;
   }, [search, chats, filter]);
 
-  const handleRename = useCallback((chat: Chat) => {
-    Alert.prompt(
-      "Rename Chat",
-      undefined,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "OK",
-          onPress: (newTitle?: string) => {
-            if (newTitle?.trim()) {
-              setChats((prev) =>
-                prev.map((c) =>
-                  c.id === chat.id ? { ...c, title: newTitle.trim() } : c,
-                ),
-              );
-            }
-          },
-        },
-      ],
-      "plain-text",
-      chat.title,
+  const handleSheetDelete = useCallback((id: string) => {
+    setChats((prev) => prev.filter((chat) => chat.id !== id));
+  }, []);
+
+  const handleSheetRename = useCallback((id: string, title: string) => {
+    setChats((prev) =>
+      prev.map((chat) => (chat.id === id ? { ...chat, title } : chat)),
     );
   }, []);
 
-  const handleDelete = useCallback((chat: Chat) => {
-    Alert.alert("Delete Chat", `Delete "${chat.title}"?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => {
-          setChats((prev) => prev.filter((c) => c.id !== chat.id));
-        },
-      },
-    ]);
-  }, []);
-
-  const handleStar = useCallback((chat: Chat) => {
+  const handleSheetPin = useCallback((id: string) => {
     setChats((prev) =>
-      prev.map((c) => (c.id === chat.id ? { ...c, starred: !c.starred } : c)),
+      prev.map((chat) =>
+        chat.id === id ? { ...chat, starred: !chat.starred } : chat,
+      ),
     );
   }, []);
 
@@ -152,16 +118,35 @@ export default function ChatsScreen() {
           automaticallyAdjustKeyboardInsets
           contentContainerClassName="android:pb-safe pb-0"
           ListHeaderComponent={
-            <Text className="px-5 pb-2 pt-3 text-[13px] font-medium text-muted-foreground">
-              {filter === "starred" ? "Starred" : "All chats"}
-            </Text>
+            IS_IOS ? (
+              <Text className="px-5 pb-2 pt-3 text-[13px] font-medium text-muted-foreground">
+                {filter === "starred" ? "Starred" : "All chats"}
+              </Text>
+            ) : (
+              <View className="flex-row gap-2 px-4 pb-2 pt-3">
+                <FilterChip
+                  label="All"
+                  active={filter === "all"}
+                  onPress={() => setFilter("all")}
+                />
+                <FilterChip
+                  label="Pinned"
+                  active={filter === "starred"}
+                  onPress={() => setFilter("starred")}
+                />
+              </View>
+            )
           }
           renderItem={({ item }) => (
             <ChatRow
               item={item}
-              onRename={() => handleRename(item)}
-              onDelete={() => handleDelete(item)}
-              onStar={() => handleStar(item)}
+              onLongPress={() =>
+                setActionTarget({
+                  id: item.id,
+                  title: item.title,
+                  pinned: item.starred,
+                })
+              }
             />
           )}
           ListEmptyComponent={search ? <EmptySearch query={search} /> : null}
@@ -176,9 +161,50 @@ export default function ChatsScreen() {
       />
 
       <LeftToolbar />
-      <RightToolbar filter={filter} setFilter={setFilter} />
-      <BottomToolbar />
+      {IS_IOS && <RightToolbar filter={filter} setFilter={setFilter} />}
+      {IS_IOS && <BottomToolbar />}
+
+      <ChatActionsSheet
+        key={actionTarget?.id ?? "closed"}
+        target={actionTarget}
+        onClose={() => setActionTarget(null)}
+        onDelete={handleSheetDelete}
+        onRename={handleSheetRename}
+        onTogglePin={handleSheetPin}
+      />
     </>
+  );
+}
+
+function FilterChip({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      className={
+        active
+          ? "rounded-full bg-foreground px-4 py-1.5 active:opacity-80"
+          : "rounded-full bg-secondary px-4 py-1.5 active:opacity-70"
+      }
+    >
+      <Text
+        className={
+          active
+            ? "text-[14px] font-medium text-background"
+            : "text-[14px] text-foreground"
+        }
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
