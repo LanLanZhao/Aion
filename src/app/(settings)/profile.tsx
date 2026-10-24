@@ -1,7 +1,10 @@
+import { SettingsCard, SettingsSection } from "@/components/settings-ui";
 import { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
   const [fullName, setFullName] = useState("Evan Bacon");
   const [nickname, setNickname] = useState("Evan");
   const [preferences, setPreferences] = useState(
@@ -10,78 +13,72 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView
-      className="flex-1 bg-background text-foreground"
+      className="flex-1 bg-background"
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerClassName="px-5 pb-10"
-      keyboardDismissMode="interactive"
+      keyboardDismissMode="on-drag"
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={{
+        paddingHorizontal: 16,
+        paddingBottom: insets.bottom + 32,
+      }}
     >
-      {/* Full Name */}
-      <Text className="text-[13px] font-medium text-muted-foreground mt-6 mb-2">
-        Full Name
-      </Text>
-      <TextInput
-        value={fullName}
-        onChangeText={setFullName}
-        className="bg-muted rounded-xl px-4 py-3 text-[17px] text-foreground border-continuous"
-        placeholderTextColor="#999"
-      />
+      <SettingsSection title="Name">
+        <View className="px-4 py-3">
+          <Text className="text-[13px] text-muted-foreground">Full name</Text>
+          <TextInput
+            value={fullName}
+            onChangeText={setFullName}
+            className="mt-0.5 py-1 text-[16px] text-foreground"
+            placeholderTextColor="#8E8E93"
+          />
+        </View>
+        <View className="px-4 py-3">
+          <Text className="text-[13px] text-muted-foreground">Nickname</Text>
+          <TextInput
+            value={nickname}
+            onChangeText={setNickname}
+            className="mt-0.5 py-1 text-[16px] text-foreground"
+            placeholderTextColor="#8E8E93"
+          />
+        </View>
+      </SettingsSection>
 
-      {/* Nickname */}
-      <Text className="text-[13px] font-medium text-muted-foreground mt-5 mb-2">
-        Nickname
-      </Text>
-      <TextInput
-        value={nickname}
-        onChangeText={setNickname}
-        className="bg-muted rounded-xl px-4 py-3 text-[17px] text-foreground border-continuous"
-        placeholderTextColor="#999"
-      />
-
-      {/* Update Profile Button */}
-      <Pressable
-        className="bg-foreground rounded-xl mt-6 py-3.5 items-center active:opacity-80 border-continuous"
-      >
-        <Text className="text-[17px] font-semibold text-background">
-          Update Profile
+      <Pressable className="mt-3 items-center rounded-[18px] border-continuous bg-foreground py-3.5 active:opacity-80">
+        <Text className="text-[16px] font-semibold text-background">
+          Update profile
         </Text>
       </Pressable>
 
-      {/* Divider */}
-      <View className="h-px bg-border my-6" />
-
-      {/* Personal Preferences */}
-      <Text className="text-[15px] font-medium text-muted-foreground mb-2">
-        Personal Preferences
-      </Text>
-      <TextInput
-        value={preferences}
-        onChangeText={setPreferences}
-        multiline
-        className="bg-muted rounded-xl px-4 py-3 text-[15px] text-foreground leading-relaxed min-h-[140px] border-continuous"
-        style={{ textAlignVertical: "top" }}
-        placeholderTextColor="#999"
-      />
-      <Text className="text-[13px] text-muted-foreground mt-2 leading-relaxed">
+      <SettingsSection title="Personal preferences">
+        <View className="px-4 py-3">
+          <TextInput
+            value={preferences}
+            onChangeText={setPreferences}
+            multiline
+            className="min-h-[120px] text-[16px] leading-relaxed text-foreground"
+            style={{ textAlignVertical: "top" }}
+            placeholderTextColor="#8E8E93"
+          />
+        </View>
+      </SettingsSection>
+      <Text className="mt-2 px-1 text-[13px] leading-relaxed text-muted-foreground">
         Your preferences will apply to all conversations, within Agent&apos;s
         guidelines.
       </Text>
 
-      {/* Save Preferences Button */}
-      <Pressable
-        className="bg-muted rounded-xl mt-4 py-3.5 items-center active:opacity-80 border-continuous"
-      >
-        <Text className="text-[17px] font-semibold text-muted-foreground">
-          Save Preferences
+      <Pressable className="mt-3 items-center rounded-[18px] border-continuous bg-secondary py-3.5 active:opacity-70">
+        <Text className="text-[16px] font-semibold text-foreground">
+          Save preferences
         </Text>
       </Pressable>
 
-      {/* Divider */}
-      <View className="h-px bg-border my-6" />
-
-      {/* Delete Account */}
-      <Pressable className="flex-row items-center gap-2 active:opacity-60">
-        <Text className="text-[17px] text-red-500">Delete account</Text>
-      </Pressable>
+      <View className="mt-8">
+        <SettingsCard>
+          <Pressable className="items-center py-3.5 active:bg-muted">
+            <Text className="text-[16px] text-red-500">Delete account</Text>
+          </Pressable>
+        </SettingsCard>
+      </View>
     </ScrollView>
   );
 }
