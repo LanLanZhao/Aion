@@ -20,7 +20,7 @@ export function Message({
       <Animated.View
         entering={FadeIn.duration(200)}
         exiting={FadeOut.duration(150)}
-        className="max-w-[80%] self-end rounded-2xl bg-user-bubble p-3 mb-2 border-continuous"
+        className="max-w-[80%] self-end rounded-[22px] bg-user-bubble px-4 py-2.5 mb-3 border-continuous"
       >
         {typeof children === "string" ? (
           <Text
@@ -40,7 +40,7 @@ export function Message({
     <Animated.View
       entering={FadeIn.duration(200)}
       exiting={FadeOut.duration(150)}
-      className="mb-2"
+      className="mb-3 pr-4"
     >
       {children}
     </Animated.View>
