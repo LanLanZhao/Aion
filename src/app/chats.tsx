@@ -1,10 +1,9 @@
 import { useDrawer } from "@/components/drawer-content";
 import { Icon } from "@/components/icon";
-import { Image } from "@/components/tw";
 import { MOCK_CHATS, type MockChat } from "@/utils/mock-chats";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Color, Link, Stack, useRouter } from "expo-router";
-import { ChevronRight, Menu, Search } from "lucide-react-native";
+import { Menu, Search } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
 import { Alert, FlatList, Pressable, Text, View } from "react-native";
 
@@ -32,30 +31,17 @@ function ChatRow({
   return (
     <Link href="/" asChild>
       <Link.Trigger>
-        <Pressable className="flex-row items-center px-5 py-4 active:bg-card">
-          <View className="flex-1 gap-0.5 mr-3">
-            <Text
-              numberOfLines={1}
-              className="text-[17px] text-foreground"
-              selectable
-            >
-              {item.title}
-            </Text>
-            <Text className="text-[13px] text-muted-foreground">
-              {formatTimeAgo(item.daysAgo)}
-            </Text>
-          </View>
-          {process.env.EXPO_OS === "ios" ? (
-            <Image
-              source="sf:chevron.right"
-              className="w-2.5 h-4 font-medium text-muted-foreground"
-            />
-          ) : (
-            <Icon
-              icon={ChevronRight}
-              className="w-2.5 h-4 text-muted-foreground"
-            />
-          )}
+        <Pressable className="mx-4 mb-2 gap-0.5 rounded-[22px] border border-border bg-card px-4 py-3 active:bg-secondary">
+          <Text
+            numberOfLines={1}
+            className="text-[16px] text-foreground"
+            selectable
+          >
+            {item.title}
+          </Text>
+          <Text className="text-[13px] text-muted-foreground">
+            {formatTimeAgo(item.daysAgo)}
+          </Text>
         </Pressable>
       </Link.Trigger>
 
@@ -150,24 +136,31 @@ export default function ChatsScreen() {
 
   return (
     <>
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id}
-        contentInsetAdjustmentBehavior="automatic"
-        automaticallyAdjustContentInsets
-        automaticallyAdjustsScrollIndicatorInsets
-        automaticallyAdjustKeyboardInsets
-        contentContainerClassName="android:pb-safe pb-0"
-        renderItem={({ item }) => (
-          <ChatRow
-            item={item}
-            onRename={() => handleRename(item)}
-            onDelete={() => handleDelete(item)}
-            onStar={() => handleStar(item)}
-          />
-        )}
-        ListEmptyComponent={search ? <EmptySearch query={search} /> : null}
-      />
+      <View className="flex-1 bg-background">
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => item.id}
+          contentInsetAdjustmentBehavior="automatic"
+          automaticallyAdjustContentInsets
+          automaticallyAdjustsScrollIndicatorInsets
+          automaticallyAdjustKeyboardInsets
+          contentContainerClassName="android:pb-safe pb-0"
+          ListHeaderComponent={
+            <Text className="px-5 pb-2 pt-3 text-[13px] font-medium text-muted-foreground">
+              {filter === "starred" ? "Starred" : "All chats"}
+            </Text>
+          }
+          renderItem={({ item }) => (
+            <ChatRow
+              item={item}
+              onRename={() => handleRename(item)}
+              onDelete={() => handleDelete(item)}
+              onStar={() => handleStar(item)}
+            />
+          )}
+          ListEmptyComponent={search ? <EmptySearch query={search} /> : null}
+        />
+      </View>
 
       <Stack.SearchBar
         placeholder="Search"
