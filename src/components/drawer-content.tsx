@@ -93,10 +93,10 @@ function DrawerChatItem({
 
 export function DrawerContent({
   onNavigate,
-  onOpenModal,
+  onOpenSettings,
 }: {
   onNavigate: (path: Href) => void;
-  onOpenModal: (path: Href) => void;
+  onOpenSettings: () => void;
 }) {
   return (
     <SafeAreaView
@@ -117,15 +117,7 @@ export function DrawerContent({
         contentContainerStyle={{ paddingBottom: 8 }}
       >
         <DrawerNavItem label="Chats" onPress={() => onNavigate("/chats")} />
-        <DrawerNavItem
-          label="Settings"
-          onPress={() => {
-            if (process.env.EXPO_OS === "android") {
-              onNavigate("/(settings)/settings");
-            }
-            onOpenModal("/(settings)/settings");
-          }}
-        />
+        <DrawerNavItem label="Settings" onPress={onOpenSettings} />
 
         {/* Recents */}
         <Text className="text-[13px] font-semibold text-muted-foreground px-6 pt-5 pb-1.5">
@@ -147,7 +139,7 @@ export function DrawerContent({
         style={{ borderTopWidth: StyleSheet.hairlineWidth }}
       >
         <TouchableGlass
-          onPress={() => onOpenModal("/(settings)/settings")}
+          onPress={onOpenSettings}
           className="rounded-full p-2 flex-row items-center gap-2.5 active:opacity-60"
         >
           <View className="w-8 h-8 rounded-full bg-muted items-center justify-center">

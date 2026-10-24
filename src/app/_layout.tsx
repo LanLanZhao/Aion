@@ -96,8 +96,12 @@ function RootDrawer() {
             closeDrawer();
             router.replace(path, { withAnchor: true });
           }}
-          onOpenModal={(path) => {
-            router.navigate(path);
+          onOpenSettings={() => {
+            // The drawer is a custom overlay, not a navigator: route changes
+            // do not dismiss it. Close it first or Settings stays hidden
+            // underneath the still-open panel.
+            closeDrawer();
+            router.navigate("/(settings)/settings");
           }}
         />
       }
