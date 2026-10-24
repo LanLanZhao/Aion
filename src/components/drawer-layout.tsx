@@ -45,6 +45,9 @@ const PROGRESS_EPSILON = 0.05;
 
 function getDrawerWidth(layoutWidth: number, drawerWidth?: number): number {
   if (drawerWidth != null) return drawerWidth;
+  // Grok-style drawer: cover the whole screen instead of leaving a dimmed
+  // strip of the chat behind it.
+  if (process.env.EXPO_OS === "android") return layoutWidth;
   return layoutWidth - APPROX_APP_BAR_HEIGHT <= DEFAULT_DRAWER_WIDTH
     ? layoutWidth - APPROX_APP_BAR_HEIGHT
     : DEFAULT_DRAWER_WIDTH;
