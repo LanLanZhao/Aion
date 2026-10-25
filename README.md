@@ -1,4 +1,6 @@
-# Chat Template
+# Quest
+
+本轮图标、附件功能与主要问题修复见 [Quest 检查报告](docs/quest-review.md)。当前默认模拟回复；技能、连接器和有认证的生产模型服务尚未接入。
 
 Android 第一阶段适配、环境要求、启动步骤与验证记录见 [docs/android-baseline.md](docs/android-baseline.md)。请使用自定义 development build；本项目不能在 Expo Go 中运行。
 

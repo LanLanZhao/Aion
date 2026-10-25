@@ -11,6 +11,7 @@ import {
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 
 import { Icon } from "@/components/icon";
+import { usePreferences } from "@/components/preferences-context";
 import { useChatContext } from "./chat-context";
 import { useConversationContext } from "./conversation";
 
@@ -25,7 +26,7 @@ export function PromptInput({ children }: { children: ReactNode }) {
   return (
     <Animated.View
       onLayout={onPromptInputLayout}
-      style={[{ position: "absolute", left: 0, right: 0 }, promptInputStyle]}
+      style={[{ position: "absolute", left: 0, right: 0, paddingBottom: process.env.EXPO_OS === "android" ? 12 : 0 }, promptInputStyle]}
     >
       {error && <PromptInputError message={error.message} />}
       <View className="mx-3 rounded-[26px] border border-border bg-card px-3 pb-2 pt-3">
@@ -36,6 +37,7 @@ export function PromptInput({ children }: { children: ReactNode }) {
 }
 
 function PromptInputError({ message }: { message?: string }) {
+  const { t } = usePreferences();
   return (
     <Animated.View entering={FadeIn.duration(200)} className="px-3 pb-2">
       <View className="flex-row items-center gap-2 rounded-xl border border-border bg-card px-3 py-2.5 border-continuous">
@@ -47,7 +49,7 @@ function PromptInputError({ message }: { message?: string }) {
           className="flex-1 text-xs text-muted-foreground"
           numberOfLines={2}
         >
-          {message || "Something went wrong"}
+          {message || t("Something went wrong")}
         </Text>
       </View>
     </Animated.View>
@@ -124,8 +126,9 @@ export function PromptInputTextarea({
  * is generating. Reads state from `ChatContext`.
  */
 export function PromptInputSubmit() {
-  const { input, isGenerating, onSend } = useChatContext();
-  const disabled = !input.trim() || isGenerating;
+  const { t } = usePreferences();
+  const { input, isGenerating, onSend, hasAttachments, isPickingAttachment } = useChatContext();
+  const disabled = (!input.trim() && !hasAttachments) || isGenerating || isPickingAttachment;
 
   return (
     <Pressable
@@ -144,14 +147,13 @@ export function PromptInputSubmit() {
       onPress={onSend}
       disabled={disabled}
       accessibilityRole="button"
-      accessibilityLabel="Send message"
+      accessibilityLabel={t("Send message")}
     >
       {isGenerating ? (
         <Animated.View entering={FadeIn} exiting={FadeOut}>
           <ActivityIndicator
             size="small"
-            colorClassName="accent-foreground"
-            className="text-foreground"
+            colorClassName="accent-muted-foreground"
           />
         </Animated.View>
       ) : (

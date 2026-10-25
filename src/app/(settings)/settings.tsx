@@ -1,5 +1,6 @@
+import { usePreferences } from "@/components/preferences-context";
 import { Icon } from "@/components/icon";
-import { useDrawer } from "@/components/drawer-content";
+import { useRestoreDrawerOnClose } from "@/components/use-restore-drawer";
 import {
   AvatarMonogram,
   SettingsCard,
@@ -29,7 +30,7 @@ import { useRouter } from "expo-router";import {
   Wallet,
 } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -39,11 +40,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const ACCOUNT = {
-  name: "Evan Bacon",
-  email: "developer@expo.dev",
-  initials: "EB",
-};
 
 type SettingsItem = {
   key: string;
@@ -98,8 +94,8 @@ const GROUPS: SettingsGroup[] = [
       {
         key: "language",
         icon: Globe,
-        label: "Speech language",
-        detail: "EN",
+        label: "Language",
+        href: "/(settings)/language",
       },
       { key: "notifications", icon: Bell, label: "Notifications" },
       { key: "privacy", icon: ShieldCheck, label: "Privacy" },
@@ -116,22 +112,20 @@ const GROUPS: SettingsGroup[] = [
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { t, profile, language } = usePreferences();
   const insets = useSafeAreaInsets();
   const [hapticFeedback, setHapticFeedback] = useState(true);
   const [query, setQuery] = useState("");
-  const { requestDrawerRestore } = useDrawer();
 
-  // Popping this screen returns to the chat, so reopen the drawer it was
-  // opened from. Pushing Profile keeps this screen mounted, so it does not
-  // fire there.
-  useEffect(() => () => requestDrawerRestore(), [requestDrawerRestore]);
+  // Popping this screen returns to the chat, so put the drawer back.
+  useRestoreDrawerOnClose();
 
   const needle = query.trim().toLowerCase();
   const groups = GROUPS.map((group) => ({
     ...group,
     items: needle
       ? group.items.filter((item) =>
-          item.label.toLowerCase().includes(needle),
+          t(item.label).toLowerCase().includes(needle) || item.label.toLowerCase().includes(needle),
         )
       : group.items,
   })).filter((group) => group.items.length > 0);
@@ -161,7 +155,7 @@ export default function SettingsScreen() {
           <Pressable
             onPress={goBack}
             accessibilityRole="button"
-            accessibilityLabel="Go back"
+            accessibilityLabel={t("Go back")}
             className="h-10 w-10 items-center justify-center rounded-full border border-border bg-card active:bg-muted"
             style={{ position: "absolute", left: 0, top: 0 }}
           >
@@ -171,10 +165,10 @@ export default function SettingsScreen() {
           <Pressable
             onPress={() => router.push("/(settings)/profile")}
             accessibilityRole="button"
-            accessibilityLabel="Edit profile"
+            accessibilityLabel={t("Edit profile")}
             className="active:opacity-80"
           >
-            <AvatarMonogram initials={ACCOUNT.initials} />
+            <AvatarMonogram initials={profile.name.slice(0, 2)} />
             <View
               className="items-center justify-center rounded-full border-[3px] border-background bg-card"
               style={{
@@ -190,10 +184,10 @@ export default function SettingsScreen() {
           </Pressable>
 
           <Text className="mt-3 text-[20px] font-semibold text-foreground">
-            {ACCOUNT.name}
+            {profile.name}
           </Text>
           <Text className="mt-0.5 text-[13px] text-muted-foreground">
-            {ACCOUNT.email}
+            {profile.nickname}
           </Text>
         </View>
 
@@ -213,7 +207,7 @@ export default function SettingsScreen() {
                   key={item.key}
                   icon={item.icon}
                   label={item.label}
-                  detail={item.detail}
+                  detail={item.key === "language" ? (language === "zh" ? "中文" : "English") : item.detail}
                   href={item.href}
                 />
               ),
@@ -224,7 +218,7 @@ export default function SettingsScreen() {
         {groups.length === 0 && (
           <View className="mt-16 items-center">
             <Text className="text-[15px] text-muted-foreground">
-              No settings match “{query.trim()}”.
+              {t("No settings match")} “{query.trim()}�?
             </Text>
           </View>
         )}
@@ -235,7 +229,7 @@ export default function SettingsScreen() {
               <SettingsCard>
                 <SettingsRow
                   icon={LogOut}
-                  label="Log out"
+                  label={t("Log out")}
                   danger
                   showChevron={false}
                 />
@@ -263,7 +257,7 @@ export default function SettingsScreen() {
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Search settings"
+            placeholder={t("Search settings")}
             placeholderTextColor="#8E8E93"
             returnKeyType="search"
             className={cn("flex-1 text-[15px] text-foreground")}

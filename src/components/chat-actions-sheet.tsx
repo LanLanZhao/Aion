@@ -1,3 +1,4 @@
+import { usePreferences } from "@/components/preferences-context";
 import { Icon } from "@/components/icon";
 import { Pencil, Pin, PinOff, Trash2 } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
@@ -35,6 +36,7 @@ export function ChatActionsSheet({
   onTogglePin,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { t } = usePreferences();
   const [mode, setMode] = useState<"actions" | "rename">("actions");
   const [draft, setDraft] = useState(target?.title ?? "");
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -66,7 +68,7 @@ export function ChatActionsSheet({
           className="flex-1"
           style={{ backgroundColor: "rgba(0, 0, 0, 0.45)" }}
           onPress={onClose}
-          accessibilityLabel="Close menu"
+          accessibilityLabel={t("Close menu")}
         />
 
         <View
@@ -82,7 +84,7 @@ export function ChatActionsSheet({
             <>
               <SheetAction
                 icon={Trash2}
-                label="Delete"
+                label={t("Delete")}
                 danger
                 onPress={() => {
                   if (target) onDelete(target.id);
@@ -91,12 +93,12 @@ export function ChatActionsSheet({
               />
               <SheetAction
                 icon={Pencil}
-                label="Rename"
+                label={t("Rename")}
                 onPress={() => setMode("rename")}
               />
               <SheetAction
                 icon={target?.pinned ? PinOff : Pin}
-                label={target?.pinned ? "Unpin" : "Pin"}
+                label={t(target?.pinned ? "Unpin" : "Pin")}
                 onPress={() => {
                   if (target) onTogglePin(target.id);
                   onClose();
@@ -105,9 +107,7 @@ export function ChatActionsSheet({
             </>
           ) : (
             <View className="pb-1">
-              <Text className="px-1 pb-2 text-[13px] font-medium text-muted-foreground">
-                Rename chat
-              </Text>
+              <Text className="px-1 pb-2 text-[13px] font-medium text-muted-foreground">{t("Rename chat")}</Text>
               <TextInput
                 value={draft}
                 onChangeText={setDraft}
@@ -118,7 +118,7 @@ export function ChatActionsSheet({
                   if (target) onRename(target.id, draft.trim() || target.title);
                   onClose();
                 }}
-                placeholder="Chat name"
+                placeholder={t("Chat name")}
                 placeholderTextColor="#8E8E93"
                 className="rounded-[18px] bg-secondary px-4 py-3 text-[16px] text-foreground"
               />
@@ -127,7 +127,7 @@ export function ChatActionsSheet({
                   onPress={() => setMode("actions")}
                   className="flex-1 items-center rounded-[18px] bg-secondary py-3 active:opacity-70"
                 >
-                  <Text className="text-[16px] text-foreground">Cancel</Text>
+                  <Text className="text-[16px] text-foreground">{t("Cancel")}</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => {
@@ -138,9 +138,7 @@ export function ChatActionsSheet({
                   }}
                   className="flex-1 items-center rounded-[18px] bg-foreground py-3 active:opacity-80"
                 >
-                  <Text className="text-[16px] font-semibold text-background">
-                    Save
-                  </Text>
+                  <Text className="text-[16px] font-semibold text-background">{t("Save")}</Text>
                 </Pressable>
               </View>
             </View>

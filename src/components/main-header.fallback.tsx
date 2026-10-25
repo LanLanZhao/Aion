@@ -1,3 +1,4 @@
+import { usePreferences } from "@/components/preferences-context";
 import { Icon } from "@/components/icon";
 import { cn } from "@/utils/tailwind";
 import { Stack } from "expo-router";
@@ -15,13 +16,14 @@ export function MainHeader({
   onTogglePrivate,
 }: MainHeaderProps) {
   const { openDrawer } = useDrawer();
+  const { t } = usePreferences();
 
   return (
     <>
       <Stack.Toolbar placement="left" asChild>
         <Pressable
           onPress={openDrawer}
-          accessibilityLabel="Open drawer"
+          accessibilityLabel={t("Open drawer")}
           accessibilityRole="button"
           className="h-10 w-10 items-center justify-center rounded-full bg-secondary active:opacity-70"
         >
@@ -31,9 +33,7 @@ export function MainHeader({
 
       <Stack.Screen.Title asChild>
         <View className="items-center">
-          <Text className="text-[17px] font-semibold text-foreground">
-            Chat
-          </Text>
+          <Text className="text-[17px] font-semibold text-foreground">{t("Chat")}</Text>
           <View className="mt-0.5 h-[2px] w-6 rounded-full bg-foreground" />
         </View>
       </Stack.Screen.Title>
@@ -43,7 +43,7 @@ export function MainHeader({
           onPress={onTogglePrivate}
           accessibilityRole="button"
           accessibilityLabel={
-            privateMode ? "Leave private chat" : "Start a private chat"
+            t(privateMode ? "Leave private chat" : "Start a private chat")
           }
           className={cn(
             "h-10 w-10 items-center justify-center rounded-full active:opacity-70",

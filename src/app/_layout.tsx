@@ -7,11 +7,14 @@ import { DrawerLayout } from "@/components/drawer-layout";
 import "@/global.css";
 import { useSystemBackgroundColor } from "@/utils/use-system-background-color";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
-import { Stack, useRouter } from "expo-router";
+import { Stack, useRouter, type Href } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 
 import { ModelProvider } from "@/components/model-context";
+import { AttachmentDraftProvider } from "@/components/chat/attachment-draft";
+import { PreferencesProvider, usePreferences } from "@/components/preferences-context";
+import { ProjectProvider } from "@/components/projects/project-context";
 import {
   DarkTheme,
   DefaultTheme,
@@ -66,16 +69,14 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   return (
-    <ThemeProvider>
+    <PreferencesProvider><ThemeProvider>
       <KeyboardProvider>
         <ModelProvider models={ALL_MODELS}>
-          <DrawerProvider>
-            <RootDrawer />
-          </DrawerProvider>
+          <ProjectProvider><AttachmentDraftProvider><DrawerProvider><RootDrawer /></DrawerProvider></AttachmentDraftProvider></ProjectProvider>
         </ModelProvider>
         {process.env.EXPO_OS !== "ios" && <StatusBar style="auto" />}
       </KeyboardProvider>
-    </ThemeProvider>
+    </ThemeProvider></PreferencesProvider>
   );
 }
 
@@ -92,14 +93,9 @@ function RootDrawer() {
       onClose={closeDrawer}
       drawerContent={
         <DrawerContent
-          onOpenChats={() => {
+          onNewChat={() => {
             closeDrawer();
-            // Push, not replace: replacing the chat screen leaves nothing to
-            // pop, so Android Back would exit the app instead of going back.
-            router.navigate("/chats");
-          }}          onNewChat={() => {
-            closeDrawer();
-            router.replace("/", { withAnchor: true });
+            router.replace({ pathname: "/", params: { newChat: `${Date.now()}` } }, { withAnchor: true });
           }}
           onOpenSettings={() => {
             // The drawer is a custom overlay, not a navigator: route changes
@@ -112,6 +108,10 @@ function RootDrawer() {
             closeDrawer();
             router.navigate("/(settings)/capabilities");
           }}
+          onOpenProjects={() => {
+            closeDrawer();
+            router.navigate("/projects" as Href);
+          }}
           onClose={closeDrawer}
         />
       }
@@ -122,6 +122,7 @@ function RootDrawer() {
 }
 
 function StackLayout() {
+  const { t } = usePreferences();
   const appForeground = useCSSVariable("--app-foreground") as string;
   const appBackground = useCSSVariable("--app-background") as string;
 
@@ -143,7 +144,7 @@ function StackLayout() {
         name="index"
         dangerouslySingular
         options={{
-          title: "Chat",
+          title: t("Chat"),
           animation: "none",
           gestureEnabled: false,
         }}
@@ -152,17 +153,19 @@ function StackLayout() {
       <Stack.Screen
         name="chats"
         options={{
-          title: "Chats",
+          title: t("Chats"),
           animation: "none",
           headerLargeTitleShadowVisible: false,
           gestureEnabled: false,
         }}
       />
 
+      <Stack.Screen name="projects" options={{ headerShown: false }} />
+
       <Stack.Screen
         name="attachments"
         options={{
-          title: "Add to chat",
+          title: t("Add to chat"),
           presentation: "formSheet",
           sheetAllowedDetents: [0.55],
           // following https://m3.material.io/components/bottom-sheets/specs
@@ -176,7 +179,7 @@ function StackLayout() {
       <Stack.Screen
         name="model-picker"
         options={{
-          title: "Model",
+          title: t("Model"),
           presentation: "formSheet",
           sheetAllowedDetents: "fitToContents",
           sheetCornerRadius: IS_ANDROID ? 28 : undefined,

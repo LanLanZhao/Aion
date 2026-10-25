@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "Quest",
+    "icon": "./assets/images/quest-icon.png",
     "slug": "chat",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -14,6 +15,10 @@
     },
     "android": {
       "package": "com.aion.chat",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/quest-adaptive-foreground.png",
+        "backgroundColor": "#FFFCF5"
+      },
       "softwareKeyboardLayoutMode": "resize",
       "predictiveBackGestureEnabled": false
     },
@@ -25,7 +30,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/quest-adaptive-foreground.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
@@ -39,7 +44,9 @@
       "expo-image",
       "expo-web-browser",
       "expo-system-ui",
-      "expo-status-bar"
+      "expo-status-bar",
+      ["expo-image-picker", { "cameraPermission": "允许 Quest 拍摄照片并添加到当前对话。", "photosPermission": "允许 Quest 选择照片并添加到当前对话。", "microphonePermission": false }],
+      "expo-document-picker"
     ],
     "experiments": {
       "typedRoutes": true,

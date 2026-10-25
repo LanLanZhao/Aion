@@ -5,7 +5,7 @@ const expoConfig = require('eslint-config-expo/flat');
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ['dist/*', '.cache/**', 'android/**', 'ios/**'],
+    ignores: ['dist/**', '.expo/**', '.cache/**', 'android/**', 'ios/**'],
   },
   {
     // These components opt out of React Compiler. Their UI-thread worklets

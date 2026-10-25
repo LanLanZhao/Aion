@@ -1,4 +1,9 @@
 import { Sidebar, SidebarToggle } from "@/components/sidebar";
+import { DrawerProvider } from "@/components/drawer-content";
+import { ModelProvider } from "@/components/model-context";
+import { AttachmentDraftProvider } from "@/components/chat/attachment-draft";
+import { DEFAULT_MODELS } from "@/utils/model-config";
+import { PreferencesProvider } from "@/components/preferences-context";
 import "@/global.css";
 import { Slot } from "expo-router";
 import { useState } from "react";
@@ -9,6 +14,7 @@ export default function RootLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
+    <PreferencesProvider><ModelProvider models={DEFAULT_MODELS}><AttachmentDraftProvider><DrawerProvider>
     <View className="flex h-dvh w-full flex-row bg-sidebar">
       <Sidebar
         isOpen={sidebarOpen}
@@ -42,5 +48,6 @@ export default function RootLayout() {
         </View>
       </View>
     </View>
+    </DrawerProvider></AttachmentDraftProvider></ModelProvider></PreferencesProvider>
   );
 }

@@ -1,5 +1,7 @@
+import { usePreferences } from "@/components/preferences-context";
 import { Icon } from "@/components/icon";
 import { cn } from "@/utils/tailwind";
+import { Image } from "expo-image";
 import { Link, type Href } from "expo-router";
 import { ChevronRight } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
@@ -18,10 +20,11 @@ export function SettingsSection({
   title: string;
   children: React.ReactNode;
 }) {
+  const { t } = usePreferences();
   return (
     <View className="mt-7">
       <Text className="mb-2 px-1 text-[13px] font-medium text-muted-foreground">
-        {title}
+        {t(title)}
       </Text>
       <SettingsCard>{children}</SettingsCard>
     </View>
@@ -67,6 +70,7 @@ export function SettingsRow({
   danger = false,
   showChevron = true,
 }: SettingsRowProps) {
+  const { t } = usePreferences();
   const rowClassName = cn(
     "flex-row items-center gap-4 px-4 py-3.5",
     (onPress || href) && "active:bg-muted",
@@ -85,11 +89,11 @@ export function SettingsRow({
           danger ? "text-red-500" : "text-foreground",
         )}
       >
-        {label}
+        {t(label)}
       </Text>
       {detail ? (
         <Text numberOfLines={1} className="text-[16px] text-muted-foreground">
-          {detail}
+          {t(detail)}
         </Text>
       ) : null}
       {showChevron && (
@@ -130,14 +134,15 @@ export function SettingsToggleRow({
   value: boolean;
   onValueChange: (value: boolean) => void;
 }) {
+  const { t } = usePreferences();
   return (
     <View className="flex-row items-center gap-4 px-4 py-3">
       <Icon icon={icon} className="h-5 w-5 text-foreground" />
       <View className="flex-1">
-        <Text className="text-[16px] text-foreground">{label}</Text>
+        <Text className="text-[16px] text-foreground">{t(label)}</Text>
         {description ? (
           <Text className="mt-0.5 text-[13px] leading-snug text-muted-foreground">
-            {description}
+            {t(description)}
           </Text>
         ) : null}
       </View>
@@ -150,9 +155,8 @@ export function SettingsToggleRow({
   );
 }
 
-/** Round monogram used by the account header. */
+/** Default account image supplied by the user. */
 export function AvatarMonogram({
-  initials,
   size = 76,
   onPress,
   accessibilityLabel,
@@ -173,12 +177,7 @@ export function AvatarMonogram({
       )}
       style={{ width: size, height: size, backgroundColor: "#E3B341" }}
     >
-      <Text
-        className="font-semibold"
-        style={{ fontSize: size * 0.36, color: "#4A3200" }}
-      >
-        {initials}
-      </Text>
+      <Image source={require("../../assets/images/default-avatar.jpg")} contentFit="cover" style={{ width: size, height: size, borderRadius: size / 2 }} />
     </Pressable>
   );
 }
