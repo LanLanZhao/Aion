@@ -1,18 +1,12 @@
-import { MOCK_CHATS } from "@/utils/mock-chats";
-import * as ContextMenu from "@radix-ui/react-context-menu";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { Link, usePathname } from "expo-router";
 import {
-  Archive,
-  Edit3,
   LogOut,
   MessageSquarePlus,
   PanelLeft,
   PanelLeftOpen,
-  Pin,
   Settings,
-  Share,
   SquarePen,
   Trash2,
   User,
@@ -65,7 +59,7 @@ const NAV_ITEMS = [
  * Sidebar matching the native drawer content layout:
  * - Bold "Chat" title
  * - Nav items (Chats, Settings)
- * - Scrollable "Recents" section with mock chat history
+ * - Scrollable "Recents" section (empty until conversations are stored)
  * - Footer with user avatar + new chat button
  *
  * Collapses on desktop, slides on mobile.
@@ -174,60 +168,9 @@ export function Sidebar({
             <Text className="text-[13px] font-semibold text-muted-foreground/60 px-6 pt-5 pb-1.5 uppercase tracking-wider">
               Recents
             </Text>
-            {MOCK_CHATS.map((chat) => {
-              const isActive = chat.id === "1";
-              return (
-                <ContextMenu.Root key={chat.id}>
-                  <ContextMenu.Trigger asChild>
-                    <Link href="/" asChild>
-                      <Pressable
-                        className={`px-4 py-2.5 mx-2 rounded-[10px] ${
-                          isActive
-                            ? "bg-accent"
-                            : "hover:bg-accent/50 active:bg-accent"
-                        }`}
-                      >
-                        <Text
-                          numberOfLines={1}
-                          className={`text-[15px] ${
-                            isActive
-                              ? "text-foreground"
-                              : "text-muted-foreground"
-                          }`}
-                        >
-                          {chat.title}
-                        </Text>
-                      </Pressable>
-                    </Link>
-                  </ContextMenu.Trigger>
-                  <ContextMenu.Portal>
-                    <ContextMenu.Content className={MENU_CONTENT_CLASS}>
-                      <ContextMenu.Item className={MENU_ITEM_CLASS}>
-                        <Pin size={14} strokeWidth={1.5} />
-                        Pin chat
-                      </ContextMenu.Item>
-                      <ContextMenu.Item className={MENU_ITEM_CLASS}>
-                        <Edit3 size={14} strokeWidth={1.5} />
-                        Rename
-                      </ContextMenu.Item>
-                      <ContextMenu.Item className={MENU_ITEM_CLASS}>
-                        <Share size={14} strokeWidth={1.5} />
-                        Share
-                      </ContextMenu.Item>
-                      <ContextMenu.Item className={MENU_ITEM_CLASS}>
-                        <Archive size={14} strokeWidth={1.5} />
-                        Archive
-                      </ContextMenu.Item>
-                      <ContextMenu.Separator className={MENU_SEPARATOR_CLASS} />
-                      <ContextMenu.Item className={MENU_DESTRUCTIVE_CLASS}>
-                        <Trash2 size={14} strokeWidth={1.5} />
-                        Delete
-                      </ContextMenu.Item>
-                    </ContextMenu.Content>
-                  </ContextMenu.Portal>
-                </ContextMenu.Root>
-              );
-            })}
+            <Text className="px-6 py-3 text-[13px] text-muted-foreground">
+              No conversations yet
+            </Text>
           </ScrollView>
         )}
 

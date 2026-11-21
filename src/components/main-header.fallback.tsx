@@ -9,11 +9,13 @@ import { useDrawer } from "./drawer-content";
 export type MainHeaderProps = {
   privateMode?: boolean;
   onTogglePrivate?: () => void;
+  title?: string;
 };
 
 export function MainHeader({
   privateMode = false,
   onTogglePrivate,
+  title,
 }: MainHeaderProps) {
   const { openDrawer } = useDrawer();
   const { t } = usePreferences();
@@ -33,7 +35,7 @@ export function MainHeader({
 
       <Stack.Screen.Title asChild>
         <View className="items-center">
-          <Text className="text-[17px] font-semibold text-foreground">{t("Chat")}</Text>
+          <Text numberOfLines={1} className="max-w-[220px] text-[17px] font-semibold text-foreground">{title ?? t("Chat")}</Text>
           <View className="mt-0.5 h-[2px] w-6 rounded-full bg-foreground" />
         </View>
       </Stack.Screen.Title>

@@ -5,8 +5,12 @@ import type { Language } from "@/utils/preferences";
 import { Check } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, ScrollView, Text } from "react-native";
+import { Stack } from "expo-router";
+import { useSettingsBack } from "@/components/navigation/use-settings-back";
+import { BackButton } from "@/components/navigation/back-button";
 
 export default function LanguageScreen() {
+  const goBack = useSettingsBack("settings");
   const { language, setLanguage, t } = usePreferences();
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -16,6 +20,8 @@ export default function LanguageScreen() {
     finally { setSaving(false); }
   }
   return (
+    <>
+    <Stack.Screen options={{ headerLeft: () => <BackButton onPress={goBack} /> }} />
     <ScrollView className="flex-1 bg-background" contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: 16 }}>
       <SettingsCard>
         {([{ value: "zh", label: "中文" }, { value: "en", label: "English" }] as const).map((option) => (
@@ -28,5 +34,6 @@ export default function LanguageScreen() {
       {saving && <Text className="mt-3 text-sm text-muted-foreground">{t("Saving…")}</Text>}
       {failed && <Text accessibilityRole="alert" className="mt-3 text-sm text-red-500">{t("Your changes were not saved. Please try again.")}</Text>}
     </ScrollView>
+    </>
   );
 }

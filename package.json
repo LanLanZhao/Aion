@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
+    "relay": "node relay/index.mjs",
     "android": "expo run:android",
     "preandroid": "expo prebuild --platform android --template expo-template-bare-minimum@57.0.33 --no-install --no-clean",
     "android:prebuild": "expo prebuild --platform android --template expo-template-bare-minimum@57.0.33 --no-install --no-clean",
@@ -15,7 +16,7 @@
     "android:bundle": "expo export --platform android --output-dir dist/android"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.77",
+    "@ai-sdk/deepseek": "^2.0.82",
     "@ai-sdk/react": "^3.0.176",
     "@expo/ui": "~57.0.26",
     "@legendapp/list": "^2.0.19",

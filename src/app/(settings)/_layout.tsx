@@ -13,6 +13,7 @@ export default function SettingsLayout() {
   return (
     <Stack
       screenOptions={{
+        animation: process.env.EXPO_OS === "android" ? "none" : undefined,
         headerTransparent: GLASS,
         headerLargeTitleShadowVisible: false,
         headerBackButtonDisplayMode: GLASS ? "minimal" : "default",

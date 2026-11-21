@@ -4,8 +4,12 @@ import { SettingsCard, SettingsSection } from "@/components/settings-ui";
 import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Stack } from "expo-router";
+import { useSettingsBack } from "@/components/navigation/use-settings-back";
+import { BackButton } from "@/components/navigation/back-button";
 
 export default function ProfileScreen() {
+  const goBack = useSettingsBack("settings");
   const insets = useSafeAreaInsets();
   const { t, profile, updateProfile } = usePreferences();
   const [fullName, setFullName] = useState(profile.name);
@@ -38,6 +42,8 @@ export default function ProfileScreen() {
     finally { setSaving(false); }
   }
   return (
+    <>
+    <Stack.Screen options={{ headerLeft: () => <BackButton onPress={goBack} /> }} />
     <ScrollView className="flex-1 bg-background" contentInsetAdjustmentBehavior="automatic" keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 32 }}>
       <SettingsSection title="Name">
         <View className="px-4 py-3">
@@ -66,5 +72,6 @@ export default function ProfileScreen() {
         <SettingsCard><Pressable className="items-center py-3.5 active:bg-muted"><Text className="text-[16px] text-red-500">{t("Delete account")}</Text></Pressable></SettingsCard>
       </View>
     </ScrollView>
+    </>
   );
 }

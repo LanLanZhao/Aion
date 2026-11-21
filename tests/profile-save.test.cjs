@@ -12,6 +12,9 @@ function mountProfile() {
   let profile = { name: 'Chiullian', nickname: 'Chiullian', preferences: '' };
   const writes = [];
   const modules = {
+    'expo-router': { Stack: { Screen: 'Screen' } },
+    '@/components/navigation/use-settings-back': { useSettingsBack: () => () => {} },
+    '@/components/navigation/back-button': { BackButton: 'BackButton' },
     react: {
       useState(initial) { const i = cursor++; if (!(i in cells)) cells[i] = initial; return [cells[i], value => { cells[i] = value; }]; },
       useRef(initial) { const i = cursor++; return cells[i] ??= { current: initial }; },

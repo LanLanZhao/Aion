@@ -10,6 +10,7 @@ import { Folder, Plus, X } from "lucide-react-native";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "@/components/tw";
+import { usePredictiveBack } from "@/components/navigation/use-predictive-back";
 
 const MIME_BY_EXTENSION: Record<string, string> = {
   jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", gif: "image/gif", pdf: "application/pdf",
@@ -20,6 +21,8 @@ export default function NewProjectScreen() {
   const { t } = usePreferences();
   const { createProject } = useProjects();
   const router = useRouter();
+  const goBack = () => router.back();
+  usePredictiveBack("projects", goBack);
   const [name, setName] = useState("");
   const [instructions, setInstructions] = useState("");
   const [files, setFiles] = useState<ProjectFile[]>([]);
@@ -63,7 +66,7 @@ export default function NewProjectScreen() {
   return (
     <SafeAreaView className="flex-1 bg-muted" edges={["top", "bottom"]}>
       <View className="flex-row items-center justify-between px-5 pb-4 pt-4">
-        <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={t("Cancel")} className="h-11 w-11 items-center justify-center active:opacity-60"><Icon icon={X} className="h-6 w-6 text-foreground" /></Pressable>
+        <Pressable onPress={goBack} accessibilityRole="button" accessibilityLabel={t("Cancel")} className="h-11 w-11 items-center justify-center active:opacity-60"><Icon icon={X} className="h-6 w-6 text-foreground" /></Pressable>
         <Text className="flex-1 px-2 text-[19px] font-semibold text-foreground">{t("New project")}</Text>
         <Pressable onPress={() => { void save(); }} disabled={busy || !name.trim()} accessibilityRole="button" className={`rounded-full px-5 py-2.5 ${name.trim() && !busy ? "bg-card active:bg-secondary" : "bg-secondary"}`}>
           <Text className={`text-[15px] font-medium ${name.trim() && !busy ? "text-foreground" : "text-muted-foreground"}`}>{t(busy ? "Creating…" : "Create")}</Text>

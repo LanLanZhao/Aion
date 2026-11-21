@@ -4,12 +4,14 @@ import { useProjects } from "@/components/projects/project-context";
 import { Stack, useLocalSearchParams, useRouter, type Href } from "expo-router";
 import { FileText, Folder, MessageSquarePlus, Trash2 } from "lucide-react-native";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { usePredictiveBack } from "@/components/navigation/use-predictive-back";
 
 export default function ProjectDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = usePreferences();
   const { projects, deleteProject } = useProjects();
   const router = useRouter();
+  usePredictiveBack("projects", () => router.canGoBack() ? router.back() : router.replace("/projects" as Href));
   const project = projects.find(item => item.id === id);
 
   const confirmDelete = () => Alert.alert(t("Delete project"), t("This project and its files will be removed from this device."), [

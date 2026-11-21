@@ -1,6 +1,8 @@
 import { usePreferences } from "@/components/preferences-context";
 import { Icon } from "@/components/icon";
-import { useRestoreDrawerOnClose } from "@/components/use-restore-drawer";
+import { useSettingsBack } from "@/components/navigation/use-settings-back";
+import { BackButton } from "@/components/navigation/back-button";
+import { Stack, useLocalSearchParams } from "expo-router";
 import {
   SettingsSection,
   SettingsToggleRow,
@@ -37,10 +39,12 @@ export default function CapabilitiesScreen() {
   const [generateMemory, setGenerateMemory] = useState(true);
   const [toolAccess, setToolAccess] = useState("Auto");
 
-  // Popping this screen returns to the chat, so put the drawer back.
-  useRestoreDrawerOnClose();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
+  const goBack = useSettingsBack(returnTo === "settings" ? "settings" : "drawer");
 
   return (
+    <>
+    <Stack.Screen options={{ headerLeft: () => <BackButton onPress={goBack} /> }} />
     <ScrollView
       className="flex-1 bg-background"
       contentInsetAdjustmentBehavior="automatic"
@@ -125,5 +129,6 @@ export default function CapabilitiesScreen() {
         })}
       </SettingsSection>
     </ScrollView>
+    </>
   );
 }

@@ -85,7 +85,7 @@ function HeaderTitleMenu() {
   );
 }
 
-export function MainHeader() {
+export function MainHeader(_props: { privateMode?: boolean; onTogglePrivate?: () => void; title?: string }) {
   const { openDrawer } = useDrawer();
   return (
     <>

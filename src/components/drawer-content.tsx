@@ -8,13 +8,15 @@ import {
   type ChatActionTarget,
 } from "@/components/chat-actions-sheet";
 import { SafeAreaView } from "@/components/tw";
-import { MOCK_CHATS, type MockChat } from "@/utils/mock-chats";
-import { cn } from "@/utils/tailwind";
+import type { UIMessage } from "ai";
+import { daysAgo, type ChatRecord } from "@/utils/chat-record";
+import { readChatStore, writeChatStore } from "@/utils/chat-storage";
 import {
   ChevronDown,
   ChevronRight,
   ChevronUp,
   ChevronsRight,
+  FlaskConical,
   Folder,
   Pin,
   Search,
@@ -25,7 +27,7 @@ import {
 } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
 
-import React, { createContext, use, useCallback, useState } from "react";
+import React, { createContext, use, useCallback, useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 
@@ -34,10 +36,17 @@ const BANNER_PILL = "rgba(255, 255, 255, 0.18)";
 const BANNER_SUBTLE = "#D6DDFF";
 
 type DrawerContextValue = {
-  chats: MockChat[];
-  setChats: React.Dispatch<React.SetStateAction<MockChat[]>>;
+  chats: ChatRecord[];
+  setChats: React.Dispatch<React.SetStateAction<ChatRecord[]>>;
+  upsertChat: (chat: ChatRecord) => void;
+  touchChat: (id: string) => void;
+  saveMessages: (id: string, messages: UIMessage[]) => void;
+  getMessages: (id: string) => UIMessage[] | undefined;
+  deleteChat: (id: string) => void;
   isOpen: boolean;
   openDrawer: () => void;
+  openDrawerImmediately: () => void;
+  instantOpen: boolean;
   closeDrawer: () => void;
   /** Ask the chat screen to reopen the drawer when it is focused again. */
   requestDrawerRestore: () => void;
@@ -48,12 +57,67 @@ type DrawerContextValue = {
 const DrawerContext = createContext<DrawerContextValue | null>(null);
 
 export function DrawerProvider({ children }: { children: React.ReactNode }) {
-  const [chats, setChats] = useState(MOCK_CHATS);
+  const [chats, setChats] = useState<ChatRecord[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [instantOpen, setInstantOpen] = useState(false);
   const restoreRef = React.useRef(false);
+  const chatsRef = React.useRef<ChatRecord[]>([]);
+  const messagesRef = React.useRef<Record<string, UIMessage[]>>({});
+  const loaded = React.useRef(false);
+  const saveTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const openDrawer = useCallback(() => setIsOpen(true), []);
-  const closeDrawer = useCallback(() => setIsOpen(false), []);
+  const scheduleSave = useCallback(() => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      void writeChatStore({ chats: chatsRef.current, messages: messagesRef.current }).catch(() => {});
+    }, 300);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void readChatStore().then((store) => {
+      if (!active) return;
+      messagesRef.current = store.messages;
+      chatsRef.current = store.chats;
+      setChats(store.chats);
+      loaded.current = true;
+    }).catch(() => { loaded.current = true; });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    chatsRef.current = chats;
+    if (loaded.current) scheduleSave();
+  }, [chats, scheduleSave]);
+
+  useEffect(() => () => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+  }, []);
+
+  const upsertChat = useCallback((chat: ChatRecord) => {
+    setChats((previous) => [chat, ...previous.filter((item) => item.id !== chat.id)]);
+  }, []);
+
+  const touchChat = useCallback((id: string) => {
+    setChats((previous) => previous.map((item) => item.id === id ? { ...item, updatedAt: Date.now() } : item));
+  }, []);
+
+  const saveMessages = useCallback((id: string, messages: UIMessage[]) => {
+    messagesRef.current[id] = messages;
+    scheduleSave();
+  }, [scheduleSave]);
+
+  const getMessages = useCallback((id: string) => messagesRef.current[id], []);
+
+  const deleteChat = useCallback((id: string) => {
+    delete messagesRef.current[id];
+    setChats((previous) => previous.filter((item) => item.id !== id));
+    scheduleSave();
+  }, [scheduleSave]);
+
+  const openDrawer = useCallback(() => { setInstantOpen(false); setIsOpen(true); }, []);
+  const openDrawerImmediately = useCallback(() => { setInstantOpen(true); setIsOpen(true); }, []);
+  const closeDrawer = useCallback(() => { setInstantOpen(false); setIsOpen(false); }, []);
   const requestDrawerRestore = useCallback(() => {
     restoreRef.current = true;
   }, []);
@@ -68,8 +132,15 @@ export function DrawerProvider({ children }: { children: React.ReactNode }) {
       value={{
         chats,
         setChats,
+        upsertChat,
+        touchChat,
+        saveMessages,
+        getMessages,
+        deleteChat,
         isOpen,
         openDrawer,
+        openDrawerImmediately,
+        instantOpen,
         closeDrawer,
         requestDrawerRestore,
         takeDrawerRestore,
@@ -129,21 +200,25 @@ function relativeTime(daysAgo: number) {
 
 export function DrawerContent({
   onNewChat,
+  onOpenChat,
   onOpenCapabilities,
   onOpenSettings,
   onOpenProjects,
+  onOpenResearch,
   onClose,
 }: {
   onNewChat: () => void;
+  onOpenChat: (id: string) => void;
   onOpenCapabilities: () => void;
   onOpenSettings: () => void;
   onOpenProjects: () => void;
+  onOpenResearch: () => void;
   onClose: () => void;
 }) {
   const { t, profile, language } = usePreferences();
   const [chatsOpen, setChatsOpen] = useState(true);
   const [query, setQuery] = useState("");
-  const { chats, setChats } = useDrawer();
+  const { chats, setChats, deleteChat } = useDrawer();
   const pinned = chats.filter((chat) => chat.starred).map((chat) => chat.id);
   const [actionTarget, setActionTarget] = useState<ChatActionTarget>(null);
 
@@ -154,12 +229,10 @@ export function DrawerContent({
   )
     .slice()
     .sort(
-      (a, b) => Number(pinned.includes(b.id)) - Number(pinned.includes(a.id)),
+      (a, b) =>
+        Number(pinned.includes(b.id)) - Number(pinned.includes(a.id)) ||
+        b.updatedAt - a.updatedAt,
     );
-
-  const deleteChat = useCallback((id: string) => {
-    setChats((previous) => previous.filter((chat) => chat.id !== id));
-  }, [setChats]);
 
   const renameChat = useCallback((id: string, title: string) => {
     setChats((previous) =>
@@ -225,6 +298,12 @@ export function DrawerContent({
           />
           <RowDivider />
           <DrawerAction
+            icon={FlaskConical}
+            label={t("Research")}
+            onPress={onOpenResearch}
+          />
+          <RowDivider />
+          <DrawerAction
             icon={Folder}
             label={t("Projects")}
             onPress={onOpenProjects}
@@ -232,6 +311,7 @@ export function DrawerContent({
         </View>
 
         {/* Mock mode stands in for Grok's subscription banner. */}
+        {process.env.EXPO_PUBLIC_MOCK_AI === "1" && (
         <Pressable
           onPress={onOpenSettings}
           accessibilityRole="button"
@@ -262,6 +342,7 @@ export function DrawerContent({
             <Icon icon={ChevronRight} className="h-4 w-4 text-white" />
           </View>
         </Pressable>
+        )}
 
         {/* Conversations */}
         <View className="mt-6 flex-row items-center justify-between px-2 pb-2">
@@ -283,46 +364,46 @@ export function DrawerContent({
         </View>
 
         {chatsOpen &&
-          visibleChats.map((chat) => (
-            <Pressable
-              key={chat.id}
-              onPress={onNewChat}
-              onLongPress={() =>
-                setActionTarget({
-                  id: chat.id,
-                  title: chat.title,
-                  pinned: pinned.includes(chat.id),
-                })
-              }
-              delayLongPress={350}
-              className="mb-2 rounded-[22px] bg-card px-4 py-3 active:bg-secondary"
-            >
-              <View className="flex-row items-center gap-1.5">
-                {pinned.includes(chat.id) && (
-                  <Icon
-                    icon={Pin}
-                    className="h-3.5 w-3.5 text-muted-foreground"
-                  />
-                )}
-                <Text
-                  numberOfLines={1}
-                  className={cn(
-                    "flex-1 text-[16px] text-foreground",
-                    chat.id === "1" && "font-semibold",
+          visibleChats.map((chat) => {
+            const days = daysAgo(chat.updatedAt);
+            return (
+              <Pressable
+                key={chat.id}
+                onPress={() => onOpenChat(chat.id)}
+                onLongPress={() =>
+                  setActionTarget({
+                    id: chat.id,
+                    title: chat.title,
+                    pinned: pinned.includes(chat.id),
+                  })
+                }
+                delayLongPress={350}
+                className="mb-2 rounded-[22px] bg-card px-4 py-3 active:bg-secondary"
+              >
+                <View className="flex-row items-center gap-1.5">
+                  {pinned.includes(chat.id) && (
+                    <Icon
+                      icon={Pin}
+                      className="h-3.5 w-3.5 text-muted-foreground"
+                    />
                   )}
-                >
-                  {chat.title}
+                  <Text
+                    numberOfLines={1}
+                    className="flex-1 text-[16px] text-foreground"
+                  >
+                    {chat.title}
+                  </Text>
+                </View>
+                <Text className="mt-0.5 text-[13px] text-muted-foreground">
+                  {language === "zh" ? (days <= 0 ? t("Today") : days === 1 ? t("Yesterday") : days < 7 ? `${days} 天前` : `${Math.round(days / 7)} 周前`) : relativeTime(days)}
                 </Text>
-              </View>
-              <Text className="mt-0.5 text-[13px] text-muted-foreground">
-                {language === "zh" ? (chat.daysAgo <= 0 ? t("Today") : chat.daysAgo === 1 ? t("Yesterday") : chat.daysAgo < 7 ? `${chat.daysAgo} 天前` : `${Math.round(chat.daysAgo / 7)} 周前`) : relativeTime(chat.daysAgo)}
-              </Text>
-            </Pressable>
-          ))}
+              </Pressable>
+            );
+          })}
 
         {chatsOpen && visibleChats.length === 0 && (
           <Text className="px-3 py-6 text-center text-[14px] text-muted-foreground">
-            {t("No chats match")} “{query.trim()}”
+            {query.trim() ? `${t("No chats match")} “${query.trim()}”` : t("No conversations yet")}
           </Text>
         )}
       </ScrollView>

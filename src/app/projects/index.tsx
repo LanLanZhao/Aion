@@ -1,23 +1,34 @@
 import { Icon } from "@/components/icon";
 import { usePreferences } from "@/components/preferences-context";
 import { useProjects } from "@/components/projects/project-context";
-import { useRestoreDrawerOnClose } from "@/components/use-restore-drawer";
+import { useDrawer } from "@/components/drawer-content";
+import { captureBackDestination } from "@/components/navigation/predictive-back";
+import { usePredictiveBack } from "@/components/navigation/use-predictive-back";
 import { Stack, useRouter } from "expo-router";
-import { Folder, Plus } from "lucide-react-native";
+import { ArrowLeft, Folder, Plus } from "lucide-react-native";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 export default function ProjectsScreen() {
   const { t } = usePreferences();
   const { projects, ready } = useProjects();
   const router = useRouter();
-  const openNew = () => router.push("/projects/new");
-
-  // Popping this screen lands on the chat, so put the drawer back.
-  useRestoreDrawerOnClose();
+  const { openDrawerImmediately } = useDrawer();
+  const openNew = async () => { await captureBackDestination("projects"); router.push("/projects/new"); };
+  const goBack = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace("/");
+    // Restore the drawer only after the pop commits.
+    requestAnimationFrame(() => requestAnimationFrame(() => openDrawerImmediately()));
+  };
+  usePredictiveBack("drawer", goBack);
 
   return (
     <>
-      <Stack.Screen options={{ title: t("Projects"), headerRight: () => (
+      <Stack.Screen options={{ title: t("Projects"), headerLeft: () => (
+        <Pressable onPress={goBack} accessibilityRole="button" accessibilityLabel={t("Go back")} className="mr-3 h-11 w-11 items-center justify-center active:opacity-60">
+          <Icon icon={ArrowLeft} className="h-6 w-6 text-foreground" />
+        </Pressable>
+      ), headerRight: () => (
         <Pressable onPress={openNew} accessibilityRole="button" accessibilityLabel={t("New project")} className="h-11 w-11 items-center justify-center active:opacity-60">
           <Icon icon={Plus} className="h-6 w-6 text-foreground" />
         </Pressable>
@@ -37,7 +48,7 @@ export default function ProjectsScreen() {
       ) : (
         <ScrollView contentContainerClassName="px-4 py-5 pb-safe" keyboardShouldPersistTaps="handled">
           {projects.map(project => (
-            <Pressable key={project.id} onPress={() => router.push({ pathname: "/projects/[id]", params: { id: project.id } })} accessibilityRole="button" className="mb-3 flex-row items-center gap-3 rounded-[22px] bg-card px-5 py-4 active:bg-secondary">
+            <Pressable key={project.id} onPress={async () => { await captureBackDestination("projects"); router.push({ pathname: "/projects/[id]", params: { id: project.id } }); }} accessibilityRole="button" className="mb-3 flex-row items-center gap-3 rounded-[22px] bg-card px-5 py-4 active:bg-secondary">
               <View className="h-11 w-11 items-center justify-center rounded-full bg-muted"><Icon icon={Folder} className="h-5 w-5 text-foreground" /></View>
               <View className="flex-1">
                 <Text numberOfLines={1} className="text-[17px] font-medium text-foreground">{project.name}</Text>

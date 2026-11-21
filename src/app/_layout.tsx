@@ -7,7 +7,7 @@ import { DrawerLayout } from "@/components/drawer-layout";
 import "@/global.css";
 import { useSystemBackgroundColor } from "@/utils/use-system-background-color";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
-import { Stack, useRouter, type Href } from "expo-router";
+import { Stack, usePathname, useRouter, type Href } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 
@@ -15,6 +15,8 @@ import { ModelProvider } from "@/components/model-context";
 import { AttachmentDraftProvider } from "@/components/chat/attachment-draft";
 import { PreferencesProvider, usePreferences } from "@/components/preferences-context";
 import { ProjectProvider } from "@/components/projects/project-context";
+import { ResearchProvider } from "@/components/research/research-context";
+import { captureBackDestination } from "@/components/navigation/predictive-back";
 import {
   DarkTheme,
   DefaultTheme,
@@ -28,29 +30,18 @@ const GLASS = isLiquidGlassAvailable();
 const IS_ANDROID = process.env.EXPO_OS === "android";
 const MODELS = [
   {
-    id: "opus-4.6",
-    label: "Opus 4.6",
-    subtitle: "Most capable for ambitious work",
+    id: "deepseek-flash",
+    label: "DeepSeek V4.1 Flash",
+    subtitle: "Latest general model, image input",
   },
   {
-    id: "sonnet-4.6",
-    label: "Sonnet 4.6",
-    subtitle: "Most efficient for everyday tasks",
-  },
-  {
-    id: "haiku-4.5",
-    label: "Haiku 4.5",
-    subtitle: "Fastest for quick answers",
+    id: "deepseek-v4-pro",
+    label: "DeepSeek V4 Pro",
+    subtitle: "Stronger knowledge, text only",
   },
 ] as const;
 
-const MORE_MODELS = [
-  { id: "opus-4.5", label: "Opus 4.5" },
-  { id: "opus-3", label: "Opus 3" },
-  { id: "sonnet-4.5", label: "Sonnet 4.5" },
-] as const;
-
-const ALL_MODELS = [...MODELS, ...MORE_MODELS];
+const ALL_MODELS = [...MODELS];
 
 function ThemeProvider(props: { children: React.ReactNode }) {
   const colorScheme = useColorScheme();
@@ -72,7 +63,7 @@ export default function RootLayout() {
     <PreferencesProvider><ThemeProvider>
       <KeyboardProvider>
         <ModelProvider models={ALL_MODELS}>
-          <ProjectProvider><AttachmentDraftProvider><DrawerProvider><RootDrawer /></DrawerProvider></AttachmentDraftProvider></ProjectProvider>
+          <ProjectProvider><AttachmentDraftProvider><ResearchProvider><DrawerProvider><RootDrawer /></DrawerProvider></ResearchProvider></AttachmentDraftProvider></ProjectProvider>
         </ModelProvider>
         {process.env.EXPO_OS !== "ios" && <StatusBar style="auto" />}
       </KeyboardProvider>
@@ -82,13 +73,18 @@ export default function RootLayout() {
 
 function RootDrawer() {
   const router = useRouter();
-  const { isOpen, openDrawer, closeDrawer } = useDrawer();
+  const pathname = usePathname();
+  const { isOpen, openDrawer, closeDrawer, instantOpen } = useDrawer();
+  // Only the chat screen owns the drawer gesture. Other screens sit above it.
+  const isChat = pathname === "/";
 
   useSystemBackgroundColor();
 
   return (
     <DrawerLayout
       open={isOpen}
+      instantOpen={instantOpen}
+      swipeEnabled={isChat}
       onOpen={openDrawer}
       onClose={closeDrawer}
       drawerContent={
@@ -97,20 +93,28 @@ function RootDrawer() {
             closeDrawer();
             router.replace({ pathname: "/", params: { newChat: `${Date.now()}` } }, { withAnchor: true });
           }}
-          onOpenSettings={() => {
-            // The drawer is a custom overlay, not a navigator: route changes
-            // do not dismiss it. Close it first or Settings stays hidden
-            // underneath the still-open panel.
+          onOpenChat={(id) => {
+            closeDrawer();
+            router.replace({ pathname: "/", params: { chat: id } }, { withAnchor: true });
+          }}
+          onOpenSettings={async () => {
+            await captureBackDestination("drawer");
             closeDrawer();
             router.navigate("/(settings)/settings");
           }}
-          onOpenCapabilities={() => {
+          onOpenCapabilities={async () => {
+            await captureBackDestination("drawer");
             closeDrawer();
-            router.navigate("/(settings)/capabilities");
+            router.navigate({ pathname: "/(settings)/capabilities", params: { returnTo: "drawer" } });
           }}
-          onOpenProjects={() => {
+          onOpenProjects={async () => {
+            await captureBackDestination("drawer");
             closeDrawer();
             router.navigate("/projects" as Href);
+          }}
+          onOpenResearch={() => {
+            closeDrawer();
+            router.navigate("/research" as Href);
           }}
           onClose={closeDrawer}
         />
@@ -160,7 +164,15 @@ function StackLayout() {
         }}
       />
 
-      <Stack.Screen name="projects" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="projects"
+        options={{ headerShown: false, animation: IS_ANDROID ? "none" : undefined }}
+      />
+
+      <Stack.Screen
+        name="research"
+        options={{ headerShown: false, animation: IS_ANDROID ? "none" : undefined }}
+      />
 
       <Stack.Screen
         name="attachments"
@@ -192,6 +204,7 @@ function StackLayout() {
       <Stack.Screen
         name="(settings)"
         options={{
+          animation: IS_ANDROID ? "none" : undefined,
           presentation: IS_ANDROID ? undefined : "modal",
           headerShown: false,
         }}

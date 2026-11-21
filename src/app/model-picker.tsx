@@ -21,12 +21,15 @@ export default function ModelPickerSheet() {
         </Pressable>
       ))}
       <View className="mx-5 my-2 h-px bg-border" />
-      <View className="flex-row items-center gap-3.5 px-5 py-3">
+      <View className="flex-row items-center gap-3 px-5 py-4">
         <Icon icon={Sparkles} className="h-5 w-5 text-foreground" />
-        <View className="flex-1"><Text className="text-[17px] text-foreground">{t("Extended thinking")}</Text><Text className="text-sm text-muted-foreground">{t("真实模型模式下请求更长思考")}</Text></View>
+        <View className="flex-1">
+          <Text className="text-[17px] text-foreground">{t("Extended thinking")}</Text>
+          <Text className="mt-1 text-sm text-muted-foreground">{t("真实模型模式下请求更长思考")}</Text>
+        </View>
         <Switch value={extendedThinking} onValueChange={setExtendedThinking} />
       </View>
-      {process.env.EXPO_PUBLIC_MOCK_AI === "1" && <Text className="px-5 pb-5 text-sm text-muted-foreground">{t("当前为模拟回复，模型与思考选项将在接入真实 API 后生效。")}</Text>}
+      {process.env.EXPO_PUBLIC_MOCK_AI === "1" && <Text className="px-5 pt-5 text-sm text-muted-foreground">{t("当前为模拟回复，模型与思考选项将在接入真实 API 后生效。")}</Text>}
     </ScrollView>
   );
 }

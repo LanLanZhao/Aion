@@ -26,7 +26,8 @@ import type { Project } from "@/components/projects/project-model";
 import { AssistantReply } from "@/components/chat/assistant-reply";
 import type { ReplyTiming } from "@/components/chat/reply-timing";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, type UIMessage } from "ai";
+import { chatTitleFromInput } from "@/utils/chat-record";
 import Constants from "expo-constants";
 import { File } from "expo-file-system";
 import { fetch as expoFetch } from "expo/fetch";
@@ -91,6 +92,7 @@ function useAIChat(attachments: ChatAttachment[], onAccepted: () => void, langua
   const requestTiming = useRef<ReplyTiming | null>(null);
   const [timings, setTimings] = useState<Record<string, ReplyTiming>>({});
   const { selectedModel, extendedThinking } = useModel();
+  const { chats, upsertChat, touchChat, saveMessages } = useDrawer();
   const api = resolveChatApiUrl(process.env.EXPO_PUBLIC_API_URL, Constants.expoConfig?.hostUri, __DEV__, process.env.EXPO_OS);
   const transport = useMemo(() => new DefaultChatTransport({ api: api ?? "/api/chat", fetch: expoFetch }), [api]);
 
@@ -142,6 +144,29 @@ function useAIChat(attachments: ChatAttachment[], onAccepted: () => void, langua
     }));
   }, [uiMessages, isStreaming, timings]);
 
+  // Persist completed turns so the drawer history survives reloads.
+  useEffect(() => {
+    if (isGenerating || uiMessages.length === 0) return;
+    saveMessages(chatId, uiMessages);
+  }, [uiMessages, isGenerating, chatId, saveMessages]);
+
+  const pendingMessages = useRef<UIMessage[] | null>(null);
+  const load = useCallback((id: string, stored: UIMessage[]) => {
+    if (id === chatId) {
+      setMessages(stored);
+      return;
+    }
+    pendingMessages.current = stored;
+    setChatId(id);
+    setMessages([]);
+  }, [chatId, setMessages]);
+  useEffect(() => {
+    const pending = pendingMessages.current;
+    if (!pending) return;
+    pendingMessages.current = null;
+    setMessages(pending);
+  }, [chatId, setMessages]);
+
   // Sync streaming text to the store
   useEffect(() => {
     if (!isStreaming) {
@@ -182,6 +207,13 @@ function useAIChat(attachments: ChatAttachment[], onAccepted: () => void, langua
         }
       }
       const files = toFileParts(mergeAttachments(projectFiles, attachments));
+      const now = Date.now();
+      if (!chats.some((item) => item.id === chatId)) {
+        const fallback = project ? "项目对话" : attachments.length ? "附件对话" : "新对话";
+        upsertChat({ id: chatId, title: chatTitleFromInput(input, fallback), createdAt: now, updatedAt: now, starred: false });
+      } else {
+        touchChat(chatId);
+      }
       requestTiming.current = { startedAt: Date.now(), kind: "response" };
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       const payload = input.trim() ? { text: input.trim(), files } : { files };
@@ -195,7 +227,7 @@ function useAIChat(attachments: ChatAttachment[], onAccepted: () => void, langua
         if (token === generation.current) setSendError(error instanceof Error ? error : new Error("发送失败，请重试。"));
       } finally { if (token === generation.current) busy.current = false; }
     })();
-  }, [input, attachments, isGenerating, api, sendMessage, selectedModel, extendedThinking, language, onAccepted, project, uiMessages.length]);
+  }, [input, attachments, isGenerating, api, sendMessage, selectedModel, extendedThinking, language, onAccepted, project, uiMessages.length, chats, chatId, upsertChat, touchChat]);
 
   const regenerate = useCallback(async (messageId: string) => {
     if (isGenerating || busy.current || uiMessages.at(-1)?.id !== messageId || uiMessages.at(-1)?.role !== "assistant") return;
@@ -225,6 +257,8 @@ function useAIChat(attachments: ChatAttachment[], onAccepted: () => void, langua
   }, [stop, setMessages, streamingStore]);
 
   return {
+    id: chatId,
+    load,
     messages,
     input,
     setInput,
@@ -239,7 +273,9 @@ function useAIChat(attachments: ChatAttachment[], onAccepted: () => void, langua
 
 function useMockChat(attachments: ChatAttachment[] = [], onAccepted: () => void = () => {}, language: "zh" | "en" = "zh", project: Project | null = null) {
   const [input, setInput] = useState("");
+  const [chatId, setChatId] = useState(() => `${Date.now()}-${Math.random()}`);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const load = useCallback((id: string, _stored: UIMessage[]) => { setChatId(id); }, []);
   const [isGenerating, setIsGenerating] = useState(false);
   const streamingStore = useMemo(() => createStreamingStore(), []);
   const streamingRef = useRef("");
@@ -351,6 +387,8 @@ function useMockChat(attachments: ChatAttachment[] = [], onAccepted: () => void 
   }, [streamingStore]);
 
   return {
+    id: chatId,
+    load,
     messages,
     input,
     setInput,
@@ -368,16 +406,16 @@ const useChatImplementation = USE_MOCK ? useMockChat : useAIChat;
 export default function ChatScreen() {
   const { language, t } = usePreferences();
   const { projects } = useProjects();
-  const { newChat, projectId } = useLocalSearchParams<{ newChat?: string; projectId?: string }>();
+  const { newChat, chat: openChatId, projectId } = useLocalSearchParams<{ newChat?: string; chat?: string; projectId?: string }>();
   const [privateMode, setPrivateMode] = useState(false);
   const project = privateMode ? null : projects.find(item => item.id === projectId) ?? null;
   const draft = useAttachmentDraft();
   const { clear: clearDraft } = draft;
   const implementation = useChatImplementation(draft.attachments, clearDraft, language, project);
-  const { clear: clearChat } = implementation;
+  const { clear: clearChat, load: loadChat } = implementation;
   const chat = { ...implementation, hasAttachments: draft.attachments.length > 0, isPickingAttachment: draft.isPicking };
   const { isGenerating, streamingStore } = chat;
-  const { openDrawer, takeDrawerRestore } = useDrawer();
+  const { openDrawer, takeDrawerRestore, getMessages, chats } = useDrawer();
   const handledReset = useRef<string | undefined>(undefined);
   useEffect(() => {
     if (newChat && newChat !== handledReset.current) {
@@ -387,6 +425,23 @@ export default function ChatScreen() {
       setPrivateMode(false);
     }
   }, [newChat, clearChat, clearDraft]);
+
+  // Load a conversation picked from the drawer.
+  const handledOpen = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!openChatId || newChat) {
+      if (!openChatId) handledOpen.current = undefined;
+      return;
+    }
+    if (openChatId === handledOpen.current) return;
+    handledOpen.current = openChatId;
+    // Let the drawer close animation finish before restoring a long history.
+    const timer = setTimeout(() => {
+      const stored = getMessages(openChatId);
+      if (stored?.length) loadChat(openChatId, stored);
+    }, 220);
+    return () => clearTimeout(timer);
+  }, [openChatId, newChat, getMessages, loadChat]);
 
   // Returning from a drawer destination should land back on the drawer.
   useFocusEffect(
@@ -425,6 +480,8 @@ export default function ChatScreen() {
     setPrivateMode((previous) => !previous);
   }, [clear, clearDraft]);
 
+  const currentTitle = chats.find((item) => item.id === implementation.id)?.title ?? (project?.name ?? t("Chat"));
+
   return (
     <>
       <ChatProvider value={chat}>
@@ -451,7 +508,7 @@ export default function ChatScreen() {
           </PromptInput>
         </Conversation>
       </ChatProvider>
-      <MainHeader privateMode={privateMode} onTogglePrivate={togglePrivate} />
+      <MainHeader title={currentTitle} privateMode={privateMode} onTogglePrivate={togglePrivate} />
     </>
   );
 }

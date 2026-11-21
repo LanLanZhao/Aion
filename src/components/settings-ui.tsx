@@ -166,8 +166,11 @@ export function AvatarMonogram({
   onPress?: () => void;
   accessibilityLabel?: string;
 }) {
+  // Decorative avatars must let their enclosing account/profile button receive
+  // the touch. A nested Pressable with no handler still claims it on Android.
+  const Container = onPress ? Pressable : View;
   return (
-    <Pressable
+    <Container
       onPress={onPress}
       accessibilityRole={onPress ? "button" : undefined}
       accessibilityLabel={accessibilityLabel}
@@ -178,6 +181,6 @@ export function AvatarMonogram({
       style={{ width: size, height: size, backgroundColor: "#E3B341" }}
     >
       <Image source={require("../../assets/images/default-avatar.jpg")} contentFit="cover" style={{ width: size, height: size, borderRadius: size / 2 }} />
-    </Pressable>
+    </Container>
   );
 }

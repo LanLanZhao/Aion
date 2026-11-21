@@ -1,11 +1,10 @@
 // Keep UI labels separate from provider IDs; callers cannot choose arbitrary paid models.
 export const MODEL_IDS: Record<string, string> = {
-  "sonnet-4.6": "claude-sonnet-4-6",
-  "opus-4.6": "claude-opus-4-6",
-  "haiku-4.5": "claude-haiku-4-5-20251001",
+  "deepseek-flash": "deepseek-flash",
+  "deepseek-v4-pro": "deepseek-v4-pro",
 };
+
 export const DEFAULT_MODELS = [
-  { id: "sonnet-4.6", label: "Sonnet 4.6" },
-  { id: "opus-4.6", label: "Opus 4.6" },
-  { id: "haiku-4.5", label: "Haiku 4.5" },
+  { id: "deepseek-flash", label: "DeepSeek V4.1 Flash", subtitle: "最新通用模型，支持图像" },
+  { id: "deepseek-v4-pro", label: "DeepSeek V4 Pro", subtitle: "更强知识，纯文本" },
 ] as const;

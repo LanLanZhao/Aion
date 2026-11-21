@@ -25,7 +25,7 @@ export function ModelProvider({
   models: readonly Model[];
 }) {
   const [extendedThinking, setExtendedThinking] = useState(true);
-  const [selectedModel, setSelected] = useState("sonnet-4.6");
+  const [selectedModel, setSelected] = useState("deepseek-flash");
   const setSelectedModel = (value: string) => {
     if (Object.hasOwn(MODEL_IDS, value)) setSelected(value);
   };

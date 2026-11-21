@@ -14,7 +14,7 @@ const partSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("file"), mediaType: z.string().max(80), filename: z.string().max(180).optional(), url: z.string() }),
 ]);
 const schema = z.object({
-  model: z.string().default("sonnet-4.6"),
+  model: z.string().default("deepseek-flash"),
   extendedThinking: z.boolean().default(false),
   language: z.enum(["zh", "en"]).default("zh"),
   projectInstructions: z.string().max(4000).default(""),

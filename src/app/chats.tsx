@@ -6,10 +6,10 @@ import {
   type ChatActionTarget,
 } from "@/components/chat-actions-sheet";
 import { Icon } from "@/components/icon";
-import { type MockChat } from "@/utils/mock-chats";
+import { daysAgo, type ChatRecord } from "@/utils/chat-record";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Color, Stack, useRouter } from "expo-router";
-import { Menu, Search } from "lucide-react-native";
+import { Menu, MessageSquare, Search } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
 
@@ -23,7 +23,7 @@ function formatTimeAgo(daysAgo: number): string {
   return `${weeks} week${weeks === 1 ? "" : "s"} ago`;
 }
 
-type Chat = MockChat;
+type Chat = ChatRecord;
 
 function ChatRow({
   item,
@@ -34,10 +34,11 @@ function ChatRow({
 }) {
   const router = useRouter();
   const { language } = usePreferences();
+  const days = daysAgo(item.updatedAt);
 
   return (
     <Pressable
-      onPress={() => router.push("/")}
+      onPress={() => router.replace({ pathname: "/", params: { chat: item.id } })}
       onLongPress={onLongPress}
       delayLongPress={350}
       className="mx-4 mb-2 gap-0.5 rounded-[22px] border border-border bg-card px-4 py-3 active:bg-secondary"
@@ -50,7 +51,7 @@ function ChatRow({
         {item.title}
       </Text>
       <Text className="text-[13px] text-muted-foreground">
-        {language === "zh" ? `${item.daysAgo < 7 ? item.daysAgo : Math.round(item.daysAgo / 7)} ${item.daysAgo < 7 ? "天前" : "周前"}` : formatTimeAgo(item.daysAgo)}
+        {language === "zh" ? `${days < 7 ? days : Math.round(days / 7)} ${days < 7 ? "天前" : "周前"}` : formatTimeAgo(days)}
       </Text>
     </Pressable>
   );
@@ -62,7 +63,19 @@ function EmptySearch({ query }: { query: string }) {
     <View className="flex-1 items-center justify-center pt-32 gap-2">
       <Icon icon={Search} className="w-10 h-10 text-muted-foreground" />
       <Text className="text-[17px] text-muted-foreground text-center px-10">
-        {t("No results found for")} “{query}�?
+        {t("No results found for")} “{query}�?
+      </Text>
+    </View>
+  );
+}
+
+function EmptyChats() {
+  const { t } = usePreferences();
+  return (
+    <View className="flex-1 items-center justify-center pt-32 gap-2">
+      <Icon icon={MessageSquare} className="w-10 h-10 text-muted-foreground" />
+      <Text className="text-[17px] text-muted-foreground text-center px-10">
+        {t("No conversations yet")}
       </Text>
     </View>
   );
@@ -71,7 +84,7 @@ function EmptySearch({ query }: { query: string }) {
 export default function ChatsScreen() {
   const { t } = usePreferences();
   const [search, setSearch] = useState("");
-  const { chats, setChats } = useDrawer();
+  const { chats, setChats, deleteChat } = useDrawer();
   const [filter, setFilter] = useState<Filter>("all");
   const [actionTarget, setActionTarget] = useState<ChatActionTarget>(null);
 
@@ -91,8 +104,8 @@ export default function ChatsScreen() {
   }, [search, chats, filter]);
 
   const handleSheetDelete = useCallback((id: string) => {
-    setChats((prev) => prev.filter((chat) => chat.id !== id));
-  }, [setChats]);
+    deleteChat(id);
+  }, [deleteChat]);
 
   const handleSheetRename = useCallback((id: string, title: string) => {
     setChats((prev) =>
@@ -151,7 +164,7 @@ export default function ChatsScreen() {
               }
             />
           )}
-          ListEmptyComponent={search ? <EmptySearch query={search} /> : null}
+          ListEmptyComponent={search ? <EmptySearch query={search} /> : <EmptyChats />}
         />
       </View>
 

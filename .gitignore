@@ -43,3 +43,7 @@ app-example
 # generated native folders
 /ios
 /android
+
+# research relay (local token and server list)
+relay/relay.config.json
+relay/data/

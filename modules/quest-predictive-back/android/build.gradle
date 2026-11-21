@@ -1,0 +1,19 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.questback'
+version = '1.0.0'
+
+android {
+  namespace 'expo.modules.questback'
+  defaultConfig {
+    versionCode 1
+    versionName '1.0.0'
+  }
+}
+
+dependencies {
+  implementation 'androidx.activity:activity:1.10.1'
+}

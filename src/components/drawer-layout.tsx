@@ -65,6 +65,7 @@ type DrawerLayoutProps = {
   drawerContent: React.ReactNode;
   drawerWidth?: number;
   swipeEnabled?: boolean;
+  instantOpen?: boolean;
   children: React.ReactNode;
 };
 
@@ -75,6 +76,7 @@ export function DrawerLayout({
   drawerContent,
   drawerWidth: drawerWidthProp,
   swipeEnabled = true,
+  instantOpen = false,
   children,
 }: DrawerLayoutProps) {
   // Gesture callbacks update Reanimated shared values on the UI thread.
@@ -154,11 +156,12 @@ export function DrawerLayout({
   // Animate to match `open` prop
   React.useEffect(() => {
     openValue.value = open;
-    toggleDrawer(open);
+    if (open && instantOpen) translationX.value = 0;
+    else toggleDrawer(open);
     if (open) {
       Keyboard.dismiss();
     }
-  }, [open, toggleDrawer, openValue]);
+  }, [open, instantOpen, toggleDrawer, openValue, translationX]);
 
   const onGestureBegin = React.useCallback(() => {
     startInteraction();
@@ -297,10 +300,20 @@ export function DrawerLayout({
             style={[
               {
                 borderRadius: CORNERS,
-                boxShadow: "0px 0px 16px rgba(0, 0, 0, 0.15)",
+                boxShadow:
+                  process.env.EXPO_OS === "ios"
+                    ? "0px 0px 16px rgba(0, 0, 0, 0.15)"
+                    : undefined,
               },
               contentAnimatedStyle,
             ]}
+            pointerEvents={
+              open
+                ? process.env.EXPO_OS === "android"
+                  ? "none"
+                  : "box-none"
+                : "auto"
+            }
           >
             <View aria-hidden={open} className="flex-1 overflow-hidden">
               {children}

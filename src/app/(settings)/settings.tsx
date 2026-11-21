@@ -1,6 +1,7 @@
 import { usePreferences } from "@/components/preferences-context";
 import { Icon } from "@/components/icon";
-import { useRestoreDrawerOnClose } from "@/components/use-restore-drawer";
+import { captureBackDestination } from "@/components/navigation/predictive-back";
+import { useSettingsBack } from "@/components/navigation/use-settings-back";
 import {
   AvatarMonogram,
   SettingsCard,
@@ -117,8 +118,13 @@ export default function SettingsScreen() {
   const [hapticFeedback, setHapticFeedback] = useState(true);
   const [query, setQuery] = useState("");
 
-  // Popping this screen returns to the chat, so put the drawer back.
-  useRestoreDrawerOnClose();
+  const goBack = useSettingsBack("drawer");
+  const openChild = async (href: Href) => {
+    await captureBackDestination("settings");
+    if (href === "/(settings)/capabilities") {
+      router.push({ pathname: "/(settings)/capabilities", params: { returnTo: "settings" } });
+    } else router.push(href);
+  };
 
   const needle = query.trim().toLowerCase();
   const groups = GROUPS.map((group) => ({
@@ -129,14 +135,6 @@ export default function SettingsScreen() {
         )
       : group.items,
   })).filter((group) => group.items.length > 0);
-
-  const goBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace("/");
-    }
-  };
 
   return (
     <View className="flex-1 bg-background">
@@ -163,7 +161,7 @@ export default function SettingsScreen() {
           </Pressable>
 
           <Pressable
-            onPress={() => router.push("/(settings)/profile")}
+            onPress={() => { void openChild("/(settings)/profile"); }}
             accessibilityRole="button"
             accessibilityLabel={t("Edit profile")}
             className="active:opacity-80"
@@ -208,7 +206,7 @@ export default function SettingsScreen() {
                   icon={item.icon}
                   label={item.label}
                   detail={item.key === "language" ? (language === "zh" ? "中文" : "English") : item.detail}
-                  href={item.href}
+                  onPress={item.href ? () => { if (item.href) void openChild(item.href); } : undefined}
                 />
               ),
             )}
@@ -218,7 +216,7 @@ export default function SettingsScreen() {
         {groups.length === 0 && (
           <View className="mt-16 items-center">
             <Text className="text-[15px] text-muted-foreground">
-              {t("No settings match")} “{query.trim()}�?
+              {t("No settings match")} “{query.trim()}”
             </Text>
           </View>
         )}

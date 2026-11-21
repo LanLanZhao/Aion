@@ -12,7 +12,7 @@ function load(relative, options = {}) {
   const { outputText } = ts.transpileModule(fs.readFileSync(filename, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } });
   const sandbox = { exports: {}, Request, Response, TextDecoder, URL, atob, __DEV__: options.development ?? true, process: { env: options.env ?? {} },
     require(name) {
-      if (name === '@ai-sdk/anthropic') return { anthropic: model => { options.called?.(model); return model; } };
+      if (name === '@ai-sdk/deepseek') return { deepseek: model => { options.called?.(model); return model; } };
       if (name === 'ai') return { convertToModelMessages: async messages => messages, streamText: () => ({ toUIMessageStreamResponse: () => new Response('stream') }) };
       if (name.startsWith('@/')) return load(`src/${name.slice(2)}.ts`, options);
       return require(name);
@@ -76,9 +76,17 @@ test('API decodes text files into user text and retains PDF image parts', async 
   assert.equal(result.messages[0].parts[1].type, 'file');
 });
 
+test('DeepSeek models resolve to provider ids before invocation', async () => {
+  const { parseChatRequest } = load('src/server/chat-request.ts');
+  const request = model => new Request('http://localhost/api/chat', { method: 'POST', body: JSON.stringify({ model, messages: [message([{ type: 'text', text: 'hi' }])] }) });
+  assert.equal((await parseChatRequest(request('deepseek-flash'))).model, 'deepseek-flash');
+  assert.equal((await parseChatRequest(request('deepseek-v4-pro'))).model, 'deepseek-v4-pro');
+  assert.equal((await parseChatRequest(request(undefined))).model, 'deepseek-flash');
+});
+
 test('production API is closed until real authentication exists, even with a provider key', async () => {
   let calls = 0;
-  const { POST } = load('src/app/api/chat+api.ts', { development: false, env: { ANTHROPIC_API_KEY: 'test-not-a-real-key' }, called: () => calls++ });
+  const { POST } = load('src/app/api/chat+api.ts', { development: false, env: { DEEPSEEK_API_KEY: 'test-not-a-real-key' }, called: () => calls++ });
   const response = await POST(new Request('http://localhost/api/chat', { method: 'POST', body: '{}' }));
   assert.equal(response.status, 503);
   assert.equal(calls, 0);

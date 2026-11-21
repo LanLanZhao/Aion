@@ -20,7 +20,7 @@
         "backgroundColor": "#FFFCF5"
       },
       "softwareKeyboardLayoutMode": "resize",
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": true
     },
     "web": {
       "output": "server"
